@@ -11,6 +11,8 @@ package programmingtheiot.gda.system;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 
+import java.util.logging.Logger;
+
 import programmingtheiot.common.ConfigConst;
 
 /**
@@ -19,6 +21,7 @@ import programmingtheiot.common.ConfigConst;
  */
 public class SystemMemUtilTask extends BaseSystemUtilTask
 {
+	Logger _Logger = Logger.getLogger(SystemMemUtilTask.class.getName());
 	// constructors
 	
 	/**
@@ -36,7 +39,12 @@ public class SystemMemUtilTask extends BaseSystemUtilTask
 	@Override
 	public float getTelemetryValue()
 	{
-		return 0.0f;
+		// my code
+		MemoryUsage memUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+		_Logger.info("Memory Usage: " + memUsage.toString());
+		// si no se especifica double en los dividendos, el resultado es 0
+		double memUtil = ( (double) memUsage.getUsed() / (double) memUsage.getMax()) * 100.0d;
+		return (float) memUtil;
 	}
 	
 }

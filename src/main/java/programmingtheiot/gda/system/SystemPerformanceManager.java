@@ -8,6 +8,7 @@
 
 package programmingtheiot.gda.system;
 
+import java.io.ObjectInputFilter.Config;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -18,6 +19,10 @@ import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.data.SystemPerformanceData;
+import programmingtheiot.gda.app.GatewayDeviceApp;
+
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Shell representation of class for student implementation.
@@ -27,6 +32,16 @@ public class SystemPerformanceManager
 {
 	// private var's
 	
+	private static final Logger _Logger =
+		Logger.getLogger(GatewayDeviceApp.class.getName());
+
+	private int pollRate = ConfigConst.DEFAULT_POLL_CYCLES;
+	private ScheduledExecutorService schedExecSvc = null;
+	private SystemCpuUtilTask cpuUtilTask = null;
+	private SystemMemUtilTask memUtilTask = null;
+	
+	private Runnable taskRunner = null;
+	private boolean isStarted = false;
 	
 	// constructors
 	
@@ -36,6 +51,22 @@ public class SystemPerformanceManager
 	 */
 	public SystemPerformanceManager()
 	{
+		this.pollRate = ConfigUtil.getInstance().getInteger(
+			ConfigConst.GATEWAY_DEVICE, ConfigConst.POLL_CYCLES_KEY,
+			ConfigConst.DEFAULT_POLL_CYCLES);
+		
+		if (this.pollRate <= 0) {
+			this.pollRate = ConfigConst.DEFAULT_POLL_CYCLES;
+		}
+
+		this.cpuUtilTask = new SystemCpuUtilTask();
+		this.memUtilTask = new SystemMemUtilTask();
+
+		this.taskRunner = new Runnable() {
+			public void run() {
+				handleTelemetry();
+			}
+		};
 	}
 	
 	
@@ -43,18 +74,42 @@ public class SystemPerformanceManager
 	
 	public void handleTelemetry()
 	{
+		float cpuUtil = this.cpuUtilTask.getTelemetryValue();
+		float memUtil = this.memUtilTask.getTelemetryValue();
+
+		_Logger.info("CPU utilization: " + cpuUtil + " %");
+		_Logger.info("Memory utilization: " + memUtil + " %");
 	}
 	
 	public void setDataMessageListener(IDataMessageListener listener)
 	{
 	}
 	
-	public void startManager()
+	public boolean startManager()
 	{
+		if (! this.isStarted) {
+			_Logger.info("Starting SystemPerformanceManager...");	
+			ScheduledFuture<?> futureTask =
+				this.schedExecSvc.scheduleAtFixedRate(
+					this.taskRunner, 1L, this.pollRate, 
+					TimeUnit.SECONDS);
+	
+			this.isStarted = true;
+		} else {
+			_Logger.info("SystemPerformanceManager is already started.");
+		}
+	
+		return this.isStarted;
 	}
 	
-	public void stopManager()
+	public boolean stopManager()
 	{
+		this.schedExecSvc.shutdown();
+		this.isStarted = false;
+
+		_Logger.info("Stopping SystemPerformanceManager...");
+
+		return true;
 	}
 	
 }
