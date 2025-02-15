@@ -17,10 +17,10 @@ import programmingtheiot.common.ConfigConst;
  */
 public abstract class BaseSystemUtilTask
 {
-	// static
+	// protected
 	
-	private static final Logger _Logger =
-		Logger.getLogger(BaseSystemUtilTask.class.getName());
+	protected final Logger _Logger =
+		Logger.getLogger(this.getClass().getName());
 	
 	
 	// private

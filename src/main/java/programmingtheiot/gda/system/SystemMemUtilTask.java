@@ -11,8 +11,6 @@ package programmingtheiot.gda.system;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 
-import java.util.logging.Logger;
-
 import programmingtheiot.common.ConfigConst;
 
 /**
@@ -21,7 +19,6 @@ import programmingtheiot.common.ConfigConst;
  */
 public class SystemMemUtilTask extends BaseSystemUtilTask
 {
-	Logger _Logger = Logger.getLogger(SystemMemUtilTask.class.getName());
 	// constructors
 	
 	/**

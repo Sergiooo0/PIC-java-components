@@ -91,7 +91,7 @@ public class GatewayDeviceAppTest
 		this.gda.startApp();
 		
 		try {
-			Thread.sleep(65000L);
+			Thread.sleep(20000L);
 		} catch (InterruptedException e) {
 			// ignore
 		}
