@@ -30,10 +30,10 @@ import java.util.logging.Level;
  */
 public class SystemPerformanceManager
 {
-	// private var's
+	// private vars
 	
 	private static final Logger _Logger =
-		Logger.getLogger(GatewayDeviceApp.class.getName());
+		Logger.getLogger(SystemPerformanceManager.class.getName());
 
 	private int pollRate = ConfigConst.DEFAULT_POLL_CYCLES;
 	private ScheduledExecutorService schedExecSvc = null;
@@ -58,15 +58,12 @@ public class SystemPerformanceManager
 		if (this.pollRate <= 0) {
 			this.pollRate = ConfigConst.DEFAULT_POLL_CYCLES;
 		}
-
+		
+		this.schedExecSvc   = Executors.newScheduledThreadPool(1);
 		this.cpuUtilTask = new SystemCpuUtilTask();
 		this.memUtilTask = new SystemMemUtilTask();
 
-		this.taskRunner = new Runnable() {
-			public void run() {
-				handleTelemetry();
-			}
-		};
+		this.taskRunner = () -> handleTelemetry();
 	}
 	
 	
