@@ -85,11 +85,11 @@ public class SystemPerformanceManager
 	public boolean startManager()
 	{
 		if (! this.isStarted) {
-			_Logger.info("Starting SystemPerformanceManager...");	
-			ScheduledFuture<?> futureTask =
-				this.schedExecSvc.scheduleAtFixedRate(
-					this.taskRunner, 1L, this.pollRate, 
-					TimeUnit.SECONDS);
+			_Logger.info("Starting SystemPerformanceManager...");
+			// ScheduledFuture<?> futureTask =	
+			this.schedExecSvc.scheduleAtFixedRate(
+				this.taskRunner, 1L, this.pollRate, 
+				TimeUnit.SECONDS);
 	
 			this.isStarted = true;
 		} else {
@@ -101,7 +101,17 @@ public class SystemPerformanceManager
 	
 	public boolean stopManager()
 	{
-		this.schedExecSvc.shutdown();
+		if (this.schedExecSvc != null) {
+			this.schedExecSvc.shutdown();
+			try {
+				if (!this.schedExecSvc.awaitTermination(5, TimeUnit.SECONDS)) {
+					this.schedExecSvc.shutdownNow();
+				}
+			} catch (InterruptedException e) {
+				this.schedExecSvc.shutdownNow();
+				Thread.currentThread().interrupt();
+			}
+		}
 		this.isStarted = false;
 
 		_Logger.info("Stopping SystemPerformanceManager...");
