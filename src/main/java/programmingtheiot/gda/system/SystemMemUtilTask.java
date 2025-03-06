@@ -27,7 +27,7 @@ public class SystemMemUtilTask extends BaseSystemUtilTask
 	 */
 	public SystemMemUtilTask()
 	{
-		super(ConfigConst.NOT_SET, ConfigConst.DEFAULT_TYPE_ID);
+		super(ConfigConst.MEM_UTIL_NAME, ConfigConst.MEM_UTIL_TYPE);
 	}
 	
 	

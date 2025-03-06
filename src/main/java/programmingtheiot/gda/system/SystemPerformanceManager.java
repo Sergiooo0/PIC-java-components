@@ -39,9 +39,13 @@ public class SystemPerformanceManager
 	private ScheduledExecutorService schedExecSvc = null;
 	private SystemCpuUtilTask cpuUtilTask = null;
 	private SystemMemUtilTask memUtilTask = null;
+	private SystemDiskUtilTask diskUtilTask = null;
 	
 	private Runnable taskRunner = null;
 	private boolean isStarted = false;
+
+	private String locationID = ConfigConst.NOT_SET;
+	private IDataMessageListener dataMsgListener = null;
 	
 	// constructors
 	
@@ -62,8 +66,13 @@ public class SystemPerformanceManager
 		this.schedExecSvc   = Executors.newScheduledThreadPool(1);
 		this.cpuUtilTask = new SystemCpuUtilTask();
 		this.memUtilTask = new SystemMemUtilTask();
+		this.diskUtilTask = new SystemDiskUtilTask();
 
 		this.taskRunner = () -> handleTelemetry();
+
+		this.locationID =
+			ConfigUtil.getInstance().getProperty(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.LOCATION_ID_PROP, ConfigConst.NOT_SET);
 	}
 	
 	
@@ -73,13 +82,29 @@ public class SystemPerformanceManager
 	{
 		float cpuUtil = this.cpuUtilTask.getTelemetryValue();
 		float memUtil = this.memUtilTask.getTelemetryValue();
+		float diskUtil = this.diskUtilTask.getTelemetryValue();
 
 		_Logger.info("CPU utilization: " + cpuUtil + " %");
 		_Logger.info("Memory utilization: " + memUtil + " %");
+		_Logger.info("Disk utilization: " + diskUtil + " %");
+
+		SystemPerformanceData spd = new SystemPerformanceData();
+		spd.setLocationID(this.locationID);
+		spd.setCpuUtilization(cpuUtil);
+		spd.setMemoryUtilization(memUtil);
+		spd.setDiskUtilization(diskUtil);
+
+		if (this.dataMsgListener != null) {
+			this.dataMsgListener.handleSystemPerformanceMessage(
+				ResourceNameEnum.GDA_SYSTEM_PERF_MSG_RESOURCE, spd);
+	}
 	}
 	
 	public void setDataMessageListener(IDataMessageListener listener)
 	{
+		if (listener != null) {
+			this.dataMsgListener = listener;
+		}
 	}
 	
 	public boolean startManager()
