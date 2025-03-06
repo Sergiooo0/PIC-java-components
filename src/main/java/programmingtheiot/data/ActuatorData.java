@@ -36,6 +36,7 @@ public class ActuatorData extends BaseIotData
 	public ActuatorData()
 	{
 		super();
+		super.setName(ConfigConst.ACTUATOR_DATA);
 	}
 	
 	

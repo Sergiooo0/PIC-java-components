@@ -27,6 +27,7 @@ public class SensorData extends BaseIotData
 	public SensorData()
 	{
 		super();
+		this.setName(ConfigConst.SENSOR_DATA);
 	}
 	
 	
