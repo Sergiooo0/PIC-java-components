@@ -12,6 +12,10 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.logging.Logger;
+
+import org.apache.commons.logging.Log;
+import org.apache.qpid.proton.amqp.messaging.Data;
 
 import com.google.gson.Gson;
 
@@ -22,9 +26,13 @@ import com.google.gson.Gson;
 public class DataUtil
 {
 	// static
-	
-	private static final DataUtil _Instance = new DataUtil();
 
+	// private var's
+	private static final Logger _Logger = Logger.getLogger(DataUtil.class.getName());
+	private static final DataUtil _Instance = new DataUtil();
+	Gson gson = new Gson();
+	
+	// constructors
 	/**
 	 * Returns the Singleton instance of this class.
 	 * 
@@ -34,12 +42,6 @@ public class DataUtil
 	{
 		return _Instance;
 	}
-	
-	
-	// private var's
-	
-	
-	// constructors
 	
 	/**
 	 * Default (private).
@@ -53,44 +55,88 @@ public class DataUtil
 	
 	// public methods
 	
-	public String actuatorDataToJson(ActuatorData actuatorData)
+	public String actuatorDataToJson(ActuatorData aData)
 	{
-		return null;
+		String jsonData = null;
+
+		if (aData != null) {			
+			jsonData = gson.toJson(aData);
+		}
+		return jsonData;
 	}
 	
-	public String sensorDataToJson(SensorData sensorData)
+	public String sensorDataToJson(SensorData sData)
 	{
-		return null;
+		String jsonData = null;
+
+		if (sData != null) {			
+			jsonData = gson.toJson(sData);
+		}
+		return jsonData;
 	}
 	
 	public String systemPerformanceDataToJson(SystemPerformanceData sysPerfData)
 	{
-		return null;
+		String jsonData = null;
+		
+		if (sysPerfData != null) {			
+			jsonData = gson.toJson(sysPerfData);
+		}
+		return jsonData;
 	}
 	
 	public String systemStateDataToJson(SystemStateData sysStateData)
 	{
-		return null;
+		String jsonData = null;
+		
+		if (sysStateData != null) {			
+			jsonData = gson.toJson(sysStateData);
+		}
+		return jsonData;
 	}
 	
 	public ActuatorData jsonToActuatorData(String jsonData)
 	{
-		return null;
+		ActuatorData aData = null;
+		try {
+			aData = gson.fromJson(jsonData, ActuatorData.class);
+		} catch (Exception e) {
+			_Logger.warning("Error parsing JSON: " + e.getMessage());
+		}
+		return aData;
 	}
 	
 	public SensorData jsonToSensorData(String jsonData)
 	{
-		return null;
+		SensorData sData = null;
+		try {
+			sData = gson.fromJson(jsonData, SensorData.class);
+		} catch (Exception e) {
+			_Logger.warning("Error parsing JSON: " + e.getMessage());
+		}
+		return sData;
 	}
 	
 	public SystemPerformanceData jsonToSystemPerformanceData(String jsonData)
 	{
-		return null;
+		SystemPerformanceData sysPerfData = null;
+		try {
+			sysPerfData = gson.fromJson(jsonData, SystemPerformanceData.class);
+		} catch (Exception e) {
+			_Logger.warning("Error parsing JSON: " + e.getMessage());
+		}
+		return sysPerfData;
 	}
 	
 	public SystemStateData jsonToSystemStateData(String jsonData)
 	{
-		return null;
+		SystemStateData sysStateData = null;
+		try {
+			sysStateData = gson.fromJson(jsonData, SystemStateData.class);
+		} catch (Exception e) {
+			_Logger.warning("Error parsing JSON: " + e.getMessage());
+		}
+		return sysStateData;
 	}
 	
 }
