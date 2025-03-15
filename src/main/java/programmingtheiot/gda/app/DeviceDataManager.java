@@ -110,15 +110,15 @@ public class DeviceDataManager implements IDataMessageListener
 	@Override
 	public boolean handleActuatorCommandResponse(ResourceNameEnum resourceName, ActuatorData data)
 	{
-		_Logger.info("Handling actuator command response for resource: " + data.getName());
+		_Logger.info("Handling actuator command response for resource: " + resourceName.toString());
 		if (data != null) {
 			_Logger.info("Handling actuator command response");
 			if (data.hasError()) {
 				_Logger.log(Level.WARNING, "Received actuator with error of status code: {0}", data.getStatusCode());
 			}
 			return true;
-		}
-		return false;
+		} 
+		return false;	
 	}
 
 	@Override

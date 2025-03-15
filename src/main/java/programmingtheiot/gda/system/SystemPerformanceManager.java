@@ -126,11 +126,12 @@ public class SystemPerformanceManager
 	
 	public boolean stopManager()
 	{
-		this.schedExecSvc.shutdown();
-		this.isStarted = false;
+		if (this.isStarted) {
+			_Logger.info("Stopping SystemPerformanceManager...");
 
-		_Logger.info("Stopping SystemPerformanceManager...");
-
+			this.schedExecSvc.shutdown();
+			this.isStarted = false;
+		}
 		return true;
 	}
 	
