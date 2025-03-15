@@ -31,7 +31,7 @@ public class SystemDiskUtilTask extends BaseSystemUtilTask {
         long usedSpace = totalSpace - freeSpace; // Used space
 
         float diskUsage = (float) usedSpace / totalSpace * 100; // Percentage usage
-        _Logger.info("Disk Usage: " + diskUsage + "%");
+        //_Logger.info("Disk Usage: " + diskUsage + "%");
         return diskUsage;
 	}
 	

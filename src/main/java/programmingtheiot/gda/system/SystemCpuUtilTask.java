@@ -38,7 +38,7 @@ public class SystemCpuUtilTask extends BaseSystemUtilTask
 	public float getTelemetryValue()
 	{
 		double cpuUtil = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-		_Logger.info("CPU Usage: " + cpuUtil);
+		//_Logger.info("CPU Usage: " + cpuUtil);
 		return (float) cpuUtil;
 	}
 	

@@ -217,6 +217,7 @@ public class DeviceDataManager implements IDataMessageListener
 			ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SYSTEM_PERF_KEY);
 		
 		if (this.enableSystemPerf) {
+
 			this.sysPerfMgr = new SystemPerformanceManager();
 			this.sysPerfMgr.setDataMessageListener(this);
 		}

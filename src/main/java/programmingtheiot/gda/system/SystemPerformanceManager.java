@@ -84,9 +84,7 @@ public class SystemPerformanceManager
 		float memUtil = this.memUtilTask.getTelemetryValue();
 		float diskUtil = this.diskUtilTask.getTelemetryValue();
 
-		_Logger.info("CPU utilization: " + cpuUtil + " %");
-		_Logger.info("Memory utilization: " + memUtil + " %");
-		_Logger.info("Disk utilization: " + diskUtil + " %");
+		_Logger.info("CPU utilization: " + cpuUtil + " %" + "\nMemory utilization: " + memUtil + " %" + "\nDisk utilization: " + diskUtil + " %");
 
 		SystemPerformanceData spd = new SystemPerformanceData();
 		spd.setLocationID(this.locationID);
