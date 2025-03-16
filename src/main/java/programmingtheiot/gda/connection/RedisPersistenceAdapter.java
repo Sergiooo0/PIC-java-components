@@ -78,6 +78,7 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	public boolean connectClient()
 	{
 		if (this.jedis.isConnected()) {
+            _Logger.log(Level.INFO, "Redis client already connected");
 			return true;
 		}else {
 			try {
