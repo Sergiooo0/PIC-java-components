@@ -8,6 +8,7 @@
 
 package programmingtheiot.gda.connection;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,7 +39,9 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 		Logger.getLogger(RedisPersistenceAdapter.class.getName());
 	
 	// private var's
-	
+	private Jedis jedis = null;
+	private String redisHost = null;
+	private int redisPort = 0;
 	
 	// constructors
 	
@@ -49,7 +52,17 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	public RedisPersistenceAdapter()
 	{
 		super();
-		
+
+		redisHost = ConfigUtil.getInstance().getProperty(
+			ConfigConst.DATA_GATEWAY_SERVICE, ConfigConst.HOST_KEY);
+		redisPort = ConfigUtil.getInstance().getInteger(
+			ConfigConst.DATA_GATEWAY_SERVICE, ConfigConst.PORT_KEY);
+		try {
+			jedis = new Jedis(redisHost, redisPort);
+			_Logger.info("Connected to Redis at " + redisHost + ":" + redisPort);
+		} catch (JedisConnectionException e) {
+			_Logger.log(Level.SEVERE, "Failed to connect to Redis", e);
+		}
 		initConfig();
 	}
 	
@@ -64,7 +77,17 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	@Override
 	public boolean connectClient()
 	{
-		return false;
+		if (this.jedis.isConnected()) {
+			return true;
+		}else {
+			try {
+				this.jedis.connect();
+				return true;
+			} catch (JedisConnectionException e) {
+				_Logger.log(Level.SEVERE, "Error connecting to Redis", e);
+				return false;
+			}
+		}
 	}
 
 	/**
@@ -73,25 +96,11 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	@Override
 	public boolean disconnectClient()
 	{
+		if (this.jedis.isConnected()) {
+			this.jedis.close();
+			return true;
+		}
 		return false;
-	}
-
-	/**
-	 *
-	 */
-	@Override
-	public ActuatorData[] getActuatorData(String topic, Date startDate, Date endDate)
-	{
-		return null;
-	}
-
-	/**
-	 *
-	 */
-	@Override
-	public SensorData[] getSensorData(String topic, Date startDate, Date endDate)
-	{
-		return null;
 	}
 
 	/**
@@ -103,31 +112,121 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	}
 
 	/**
-	 *
-	 */
-	@Override
-	public boolean storeData(String topic, int qos, ActuatorData... data)
-	{
-		return false;
-	}
+     * Stores ActuatorData in Redis.
+     */
+    @Override
+    public boolean storeData(String topic, int qos, ActuatorData... data) {
+        if (!this.jedis.isConnected()) {
+            _Logger.warning("Cannot store data: Redis is not connected.");
+            return false;
+        }
 
-	/**
-	 *
-	 */
-	@Override
-	public boolean storeData(String topic, int qos, SensorData... data)
-	{
-		return false;
-	}
+        try {
+            for (ActuatorData d : data) {
+                String jsonData = DataUtil.getInstance().actuatorDataToJson(d);
+				// TODO: Add timestamp to data
+				// lpush añade elementos a una lista.
+                this.jedis.lpush(topic, jsonData);
+                _Logger.info("Stored data in Redis at topic: " + topic);
+            }
+            return true;
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Failed to store data in Redis", e);
+            return false;
+        }
+    }
 
-	/**
-	 *
-	 */
-	@Override
-	public boolean storeData(String topic, int qos, SystemPerformanceData... data)
-	{
-		return false;
-	}
+    /**
+     * Stores SensorData in Redis.
+     */
+    @Override
+    public boolean storeData(String topic, int qos, SensorData... data) {
+        if (!this.jedis.isConnected()) {
+            _Logger.warning("Cannot store data: Redis is not connected.");
+            return false;
+        }
+
+        try {
+            for (SensorData d : data) {
+                String jsonData = DataUtil.getInstance().sensorDataToJson(d);
+                this.jedis.lpush(topic, jsonData);
+                _Logger.info("Stored data in Redis at topic: " + topic);
+            }
+            return true;
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Failed to store data in Redis", e);
+            return false;
+        }
+    }
+
+    /**
+     * Stores SystemPerformanceData in Redis.
+     */
+    @Override
+    public boolean storeData(String topic, int qos, SystemPerformanceData... data) {
+        if (!this.jedis.isConnected()) {
+            _Logger.warning("Cannot store data: Redis is not connected.");
+            return false;
+        }
+
+        try {
+            for (SystemPerformanceData d : data) {
+                String jsonData = DataUtil.getInstance().systemPerformanceDataToJson(d);
+                this.jedis.lpush(topic, jsonData);
+                _Logger.info("Stored SystemPerformanceData in Redis at topic: " + topic);
+            }
+            return true;
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Failed to store data in Redis", e);
+            return false;
+        }
+    }
+
+
+    /**
+     * Retrieves ActuatorData from Redis based on the given time range.
+     */
+    @Override
+    public ActuatorData[] getActuatorData(String topic, Date startDate, Date endDate) {
+        List<String> jsonList = retrieveDataFromRedis(topic);
+		ActuatorData[] actuatorDataList = new ActuatorData[jsonList.size()];
+		for (int i = 0; i < jsonList.size(); i++) {
+			actuatorDataList[i] = DataUtil.getInstance().jsonToActuatorData(jsonList.get(i));
+		}
+		return actuatorDataList;
+    }
+
+    /**
+     * Retrieves SensorData from Redis based on the given time range.
+     */
+    @Override
+    public SensorData[] getSensorData(String topic, Date startDate, Date endDate) {
+        List<String> jsonList = retrieveDataFromRedis(topic);
+        SensorData[] sensorDataList = new SensorData[jsonList.size()];
+        for (int i = 0; i < jsonList.size(); i++) {
+            sensorDataList[i] = DataUtil.getInstance().jsonToSensorData(jsonList.get(i));
+        }
+        return sensorDataList;
+    }
+
+    /**
+     * Retrieves data from Redis.
+     */
+    private List<String> retrieveDataFromRedis(String topic) {
+        List<String> jsonList = new ArrayList<>();
+        if (!this.jedis.isConnected()) {
+            _Logger.warning("Cannot retrieve data: Redis is not connected.");
+            return jsonList;
+        }
+
+        try {
+            jsonList = this.jedis.lrange(topic, 0, -1);
+            _Logger.info("Retrieved " + jsonList.size() + " records from Redis topic: " + topic);
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Failed to retrieve data from Redis", e);
+        }
+        return jsonList;
+    }
 	
 	
 	// private methods
@@ -137,6 +236,11 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	 */
 	private void initConfig()
 	{
+	}
+
+
+	public boolean isConnected() {
+		return this.jedis.isConnected();
 	}
 
 }
