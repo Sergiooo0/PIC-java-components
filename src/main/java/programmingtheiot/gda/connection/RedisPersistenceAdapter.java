@@ -19,12 +19,14 @@ import java.util.logging.Logger;
 
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
+import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.data.ActuatorData;
 import programmingtheiot.data.DataUtil;
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
-
+import programmingtheiot.gda.app.DeviceDataManager;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
 /**
@@ -42,6 +44,9 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	private Jedis jedis = null;
 	private String redisHost = null;
 	private int redisPort = 0;
+
+    private boolean isSubscribed = false;
+    private Thread subscriptionThread = null;
 	
 	// constructors
 	
@@ -243,5 +248,40 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 	public boolean isConnected() {
 		return this.jedis.isConnected();
 	}
+
+    public void subscribeToChannel(JedisPubSub subscriber, ResourceNameEnum resource) {
+        if (isSubscribed) {
+            _Logger.warning("Already subscribed to channel: " + resource.getResourceName());
+            return;
+        }
+
+        isSubscribed = true;
+        subscriptionThread = new Thread(() -> {
+            try {
+                _Logger.info("Subscribe to channel: " + resource.getResourceName());
+                jedis.subscribe(subscriber, resource.getResourceName());
+            } catch (Exception e) {
+                _Logger.log(Level.SEVERE, "Error in subscription thread", e);
+            }
+        });
+
+        subscriptionThread.start();
+    }
+
+    public void unsubscribeFromChannel(JedisPubSub subscriber) {
+        if (isSubscribed) {
+            _Logger.info("Cancel subscription to channel");
+            isSubscribed = false;
+            subscriber.unsubscribe(); // Cierra la suscripción
+        }
+
+        if (subscriptionThread != null && subscriptionThread.isAlive()) {
+            try {
+                subscriptionThread.join(); // Espera a que el hilo termine
+            } catch (InterruptedException e) {
+                _Logger.log(Level.SEVERE, "Error waiting for subscription thread to finish", e);
+            }
+        }
+    }
 
 }

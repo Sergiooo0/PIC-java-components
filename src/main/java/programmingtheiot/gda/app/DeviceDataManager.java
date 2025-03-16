@@ -35,11 +35,13 @@ import programmingtheiot.gda.connection.RedisPersistenceAdapter;
 import programmingtheiot.gda.connection.SmtpClientConnector;
 import programmingtheiot.gda.system.SystemPerformanceManager;
 
+import redis.clients.jedis.JedisPubSub;
+
 /**
  * Shell representation of class for student implementation.
  *
  */
-public class DeviceDataManager implements IDataMessageListener
+public class DeviceDataManager extends JedisPubSub implements IDataMessageListener
 {
 	// static
 	
@@ -180,6 +182,7 @@ public class DeviceDataManager implements IDataMessageListener
 			}
 			// transform the data into a JSON string with DataUtil
 			String json = dataUtil.systemPerformanceDataToJson(data);
+			_Logger.info("Handled system performance message");
 			return true;
 		}
 		return false;
@@ -199,6 +202,7 @@ public class DeviceDataManager implements IDataMessageListener
 		if (this.redisClient != null) {
 			_Logger.info("Starting Redis client.");
 			this.redisClient.connectClient();
+			this.redisClient.subscribeToChannel(this, ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
 		}
 	}
 	
@@ -211,10 +215,33 @@ public class DeviceDataManager implements IDataMessageListener
 		}
 		if (this.redisClient != null) {
 			_Logger.info("Stopping Redis client.");
+			this.redisClient.unsubscribeFromChannel(this);
 			this.redisClient.disconnectClient();
 		}
 	}
 
+	// JedisPubSub methods
+
+	public void onMessage(String channel, String message) {
+		_Logger.info("Mensaje recibido en canal [" + channel + "]: " + message);
+	}
+
+	public void onSubscribe(String channel, int subscribedChannels) {
+		_Logger.info("Subscribed to channel: " + channel);
+	}
+
+	public void onUnsubscribe(String channel, int subscribedChannels) {
+		_Logger.info("Unsubscribed from channel: " + channel);
+	}
+
+	public void onPSubscribe(String pattern, int subscribedChannels) {
+	}
+
+	public void onPUnsubscribe(String pattern, int subscribedChannels) {
+	}
+
+	public void onPMessage(String pattern, String channel, String message) {
+	}
 	
 	// private methods
 	
@@ -256,5 +283,5 @@ public class DeviceDataManager implements IDataMessageListener
 		_Logger.info("Handling upstream transmission for resource: " + resourceName.toString());
 		return false;
 	}
-	
+
 }
