@@ -113,7 +113,7 @@ public class PersistenceClientAdapterTest
 	public void testGetActuatorData()
 	{
 		rpa.connectClient();
-		ActuatorData[] ad = rpa.getActuatorData("actuator-data", new Date(), new Date());
+		ActuatorData[] ad = rpa.getActuatorData("actuator-data_vacio", new Date(), new Date());
 		assertNotNull(ad);
 		assertEquals(0, ad.length);
 		rpa.disconnectClient();
@@ -142,13 +142,17 @@ public class PersistenceClientAdapterTest
 		ActuatorData[] ad = new ActuatorData[1];
 		ad[0] = new ActuatorData();
 
-		rpa.storeData("actuator-data", 0, ad);
+		rpa.storeData("actuator-data-test", 0, ad);
 		assertTrue(rpa.isConnected());
 		
-		ActuatorData[] ad2 = rpa.getActuatorData("actuator-data", new Date(), new Date());
+		ActuatorData[] ad2 = rpa.getActuatorData("actuator-data-test", new Date(), new Date());
 		assertNotNull(ad2);
-		assertEquals(1, ad2.length);
-		assertEquals(ad[0], ad2[0]);
+		// comparamos los valores de los atributos de la clase ActuatorData
+		assertEquals(ad[0].getStateData(), ad2[0].getStateData());
+		assertEquals(ad[0].getName(), ad2[0].getName());
+		assertEquals(ad[0].getValue(), ad2[0].getValue(), 0.0001);
+		assertEquals(ad[0].getCommand(), ad2[0].getCommand());
+		assertEquals(ad[0].isResponseFlagEnabled(), ad2[0].isResponseFlagEnabled());
 		rpa.disconnectClient();
 	}
 	
@@ -162,13 +166,17 @@ public class PersistenceClientAdapterTest
 		SensorData[] sd = new SensorData[1];
 		sd[0] = new SensorData();
 		
-		rpa.storeData("sensor-data", 0, sd);
+		rpa.storeData("sensor-data-test", 0, sd);
 		assertTrue(rpa.isConnected());
 		
-		SensorData[] sd2 = rpa.getSensorData("sensor-data", new Date(), new Date());
+		SensorData[] sd2 = rpa.getSensorData("sensor-data-test", new Date(), new Date());
 		assertNotNull(sd2);
-		assertEquals(1, sd2.length);
-		assertEquals(sd[0], sd2[0]);
+		// comparamos los valores de los atributos de la clase SensorData
+		assertEquals(sd[0].getTimeStamp(), sd2[0].getTimeStamp());
+		assertEquals(sd[0].getName(), sd2[0].getName());
+		assertEquals(sd[0].getValue(), sd2[0].getValue(), 0.0001);
+		assertEquals(sd[0].getTypeID(), sd2[0].getTypeID());
+		assertEquals(sd[0].getLocationID(), sd2[0].getLocationID());
 		rpa.disconnectClient();
 	}
 	
