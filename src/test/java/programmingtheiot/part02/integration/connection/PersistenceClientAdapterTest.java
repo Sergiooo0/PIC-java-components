@@ -126,7 +126,7 @@ public class PersistenceClientAdapterTest
 	public void testGetSensorData()
 	{
 		rpa.connectClient();
-		SensorData[] sd = rpa.getSensorData("sensor-data", new Date(), new Date());
+		SensorData[] sd = rpa.getSensorData("sensor-data-testGetSensorData", new Date(), new Date());
 		assertNotNull(sd);
 		assertEquals(0, sd.length);
 		rpa.disconnectClient();
