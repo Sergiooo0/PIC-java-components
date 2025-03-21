@@ -62,7 +62,7 @@ public class ActuatorDataTest
 	{
 		ActuatorData ad = new ActuatorData();
 		
-		assertEquals(ad.getName(), ConfigConst.NOT_SET);
+		assertEquals(ad.getName(), ConfigConst.ACTUATOR_DATA);
 		assertEquals(ad.getStatusCode(), ConfigConst.DEFAULT_STATUS);
 		assertTrue(ad.getCommand() == ConfigConst.DEFAULT_COMMAND);
 		assertTrue(ad.getValue() == ConfigConst.DEFAULT_VAL);
@@ -85,7 +85,7 @@ public class ActuatorDataTest
 		ActuatorData ad = new ActuatorData();
 		ActuatorData ad2 = createTestData();
 
-		assertEquals(ad.getName(), ConfigConst.NOT_SET);
+		assertEquals(ad.getName(), ConfigConst.ACTUATOR_DATA);
 		assertEquals(ad.getStatusCode(), ConfigConst.DEFAULT_STATUS);
 		assertTrue(ad.getCommand() == ConfigConst.DEFAULT_COMMAND);
 		assertTrue(ad.getValue() == ConfigConst.DEFAULT_VAL);
