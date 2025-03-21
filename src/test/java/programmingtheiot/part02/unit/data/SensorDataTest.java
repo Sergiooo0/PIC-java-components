@@ -61,7 +61,7 @@ public class SensorDataTest
 	{
 		SensorData ssd = new SensorData();
 		
-		assertEquals(ssd.getName(), ConfigConst.NOT_SET);
+		assertEquals(ssd.getName(), ConfigConst.SENSOR_DATA);
 		assertEquals(ssd.getStatusCode(), SensorData.DEFAULT_STATUS);
 		assertTrue(ssd.getValue() == ConfigConst.DEFAULT_VAL);
 	}
@@ -82,7 +82,7 @@ public class SensorDataTest
 		SensorData ssd = new SensorData();
 		SensorData ssd2 = createTestData();
 
-		assertEquals(ssd.getName(), ConfigConst.NOT_SET);
+		assertEquals(ssd.getName(), ConfigConst.SENSOR_DATA);
 		assertEquals(ssd.getStatusCode(), SensorData.DEFAULT_STATUS);
 		assertTrue(ssd.getValue() == ConfigConst.DEFAULT_VAL);
 		

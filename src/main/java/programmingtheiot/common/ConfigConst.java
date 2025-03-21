@@ -104,6 +104,8 @@ public class ConfigConst
 
 	public static final String SYS_PERF_DATA  = "SysPerfData";
 	public static final String SYS_STATE_DATA = "SysStateData";
+	public static final String ACTUATOR_DATA  = "ActuatorData";
+	public static final String SENSOR_DATA    = "SensorData";
 	
 	public static final int    DEFAULT_COMMAND = 0;
 	public static final int    DEFAULT_STATUS  = 0;

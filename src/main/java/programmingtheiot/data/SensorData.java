@@ -8,32 +8,26 @@
 
 package programmingtheiot.data;
 
-import java.io.Serializable;
-
-import programmingtheiot.common.ConfigConst;
+import programmingtheiot.common.ConfigConst;import java.time.LocalDate;
 
 /**
  * Shell representation of class for student implementation.
  *
  */
-public class SensorData extends BaseIotData implements Serializable
+public class SensorData extends BaseIotData
 {
 	// static
 	
 	
 	// private var's
-	
+	private float value = ConfigConst.DEFAULT_VAL;
     
 	// constructors
 	
 	public SensorData()
 	{
 		super();
-	}
-	
-	public SensorData(int sensorType)
-	{
-		super();
+		this.setName(ConfigConst.SENSOR_DATA);
 	}
 	
 	
@@ -41,11 +35,13 @@ public class SensorData extends BaseIotData implements Serializable
 	
 	public float getValue()
 	{
-		return 0.0f;
+		return this.value;
 	}
 	
 	public void setValue(float val)
 	{
+		super.updateTimeStamp();
+		this.value = val;
 	}
 	
 	/**
@@ -72,6 +68,10 @@ public class SensorData extends BaseIotData implements Serializable
 	 */
 	protected void handleUpdateData(BaseIotData data)
 	{
+		if (data instanceof SensorData) {
+			SensorData sData = (SensorData) data;
+			this.setValue(sData.getValue());
+		}
 	}
 	
 }

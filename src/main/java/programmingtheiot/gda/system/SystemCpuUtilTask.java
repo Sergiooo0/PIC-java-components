@@ -28,7 +28,7 @@ public class SystemCpuUtilTask extends BaseSystemUtilTask
 	 */
 	public SystemCpuUtilTask()
 	{
-		super(ConfigConst.NOT_SET, ConfigConst.DEFAULT_TYPE_ID);
+		super(ConfigConst.CPU_UTIL_NAME, ConfigConst.CPU_UTIL_TYPE);
 	}
 	
 	
@@ -38,7 +38,7 @@ public class SystemCpuUtilTask extends BaseSystemUtilTask
 	public float getTelemetryValue()
 	{
 		double cpuUtil = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-		_Logger.info("CPU Usage: " + cpuUtil);
+		//_Logger.info("CPU Usage: " + cpuUtil);
 		return (float) cpuUtil;
 	}
 	

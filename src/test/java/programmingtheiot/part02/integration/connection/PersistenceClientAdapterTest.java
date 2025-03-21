@@ -11,6 +11,7 @@ package programmingtheiot.part02.integration.connection;
 
 import static org.junit.Assert.*;
 
+import java.util.Date;
 import java.util.logging.Logger;
 
 import org.junit.After;
@@ -19,7 +20,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import programmingtheiot.data.ActuatorData;
+import programmingtheiot.data.SensorData;
 import programmingtheiot.gda.connection.RedisPersistenceAdapter;
+import programmingtheiot.data.SystemPerformanceData;
 
 /**
  * This test case class contains very basic integration tests for
@@ -39,7 +43,7 @@ public class PersistenceClientAdapterTest
 	
 	// member var's
 	
-	private RedisPersistenceAdapter rpa = null;
+	private RedisPersistenceAdapter rpa = new RedisPersistenceAdapter();
 	
 	
 	// test setup methods
@@ -84,7 +88,10 @@ public class PersistenceClientAdapterTest
 	@Test
 	public void testConnectClient()
 	{
-		fail("Not yet implemented"); // TODO
+		rpa.connectClient();
+		assertTrue(rpa.isConnected());
+		rpa.disconnectClient();
+		assertFalse(rpa.isConnected());
 	}
 	
 	/**
@@ -92,8 +99,11 @@ public class PersistenceClientAdapterTest
 	 */
 	@Test
 	public void testDisconnectClient()
-	{
-		fail("Not yet implemented"); // TODO
+	{	
+		rpa.connectClient();
+		assertTrue(rpa.isConnected());
+		rpa.disconnectClient();
+		assertFalse(rpa.isConnected());
 	}
 	
 	/**
@@ -102,7 +112,11 @@ public class PersistenceClientAdapterTest
 	@Test
 	public void testGetActuatorData()
 	{
-		fail("Not yet implemented"); // TODO
+		rpa.connectClient();
+		ActuatorData[] ad = rpa.getActuatorData("actuator-data_vacio", new Date(), new Date());
+		assertNotNull(ad);
+		assertEquals(0, ad.length);
+		rpa.disconnectClient();
 	}
 	
 	/**
@@ -111,7 +125,11 @@ public class PersistenceClientAdapterTest
 	@Test
 	public void testGetSensorData()
 	{
-		fail("Not yet implemented"); // TODO
+		rpa.connectClient();
+		SensorData[] sd = rpa.getSensorData("sensor-data", new Date(), new Date());
+		assertNotNull(sd);
+		assertEquals(0, sd.length);
+		rpa.disconnectClient();
 	}
 	
 	/**
@@ -120,7 +138,22 @@ public class PersistenceClientAdapterTest
 	@Test
 	public void testStoreDataStringIntActuatorDataArray()
 	{
-		fail("Not yet implemented"); // TODO
+		rpa.connectClient();
+		ActuatorData[] ad = new ActuatorData[1];
+		ad[0] = new ActuatorData();
+
+		rpa.storeData("actuator-data-test", 0, ad);
+		assertTrue(rpa.isConnected());
+		
+		ActuatorData[] ad2 = rpa.getActuatorData("actuator-data-test", new Date(), new Date());
+		assertNotNull(ad2);
+		// comparamos los valores de los atributos de la clase ActuatorData
+		assertEquals(ad[0].getStateData(), ad2[0].getStateData());
+		assertEquals(ad[0].getName(), ad2[0].getName());
+		assertEquals(ad[0].getValue(), ad2[0].getValue(), 0.0001);
+		assertEquals(ad[0].getCommand(), ad2[0].getCommand());
+		assertEquals(ad[0].isResponseFlagEnabled(), ad2[0].isResponseFlagEnabled());
+		rpa.disconnectClient();
 	}
 	
 	/**
@@ -129,7 +162,22 @@ public class PersistenceClientAdapterTest
 	@Test
 	public void testStoreDataStringIntSensorDataArray()
 	{
-		fail("Not yet implemented"); // TODO
+		rpa.connectClient();
+		SensorData[] sd = new SensorData[1];
+		sd[0] = new SensorData();
+		
+		rpa.storeData("sensor-data-test", 0, sd);
+		assertTrue(rpa.isConnected());
+		
+		SensorData[] sd2 = rpa.getSensorData("sensor-data-test", new Date(), new Date());
+		assertNotNull(sd2);
+		// comparamos los valores de los atributos de la clase SensorData
+		assertEquals(sd[0].getTimeStamp(), sd2[0].getTimeStamp());
+		assertEquals(sd[0].getName(), sd2[0].getName());
+		assertEquals(sd[0].getValue(), sd2[0].getValue(), 0.0001);
+		assertEquals(sd[0].getTypeID(), sd2[0].getTypeID());
+		assertEquals(sd[0].getLocationID(), sd2[0].getLocationID());
+		rpa.disconnectClient();
 	}
 	
 	/**
@@ -138,7 +186,13 @@ public class PersistenceClientAdapterTest
 	@Test
 	public void testStoreDataStringIntSystemPerformanceDataArray()
 	{
-		fail("Not yet implemented"); // TODO
+		rpa.connectClient();
+		SystemPerformanceData[] spd = new SystemPerformanceData[1];
+		spd[0] = new SystemPerformanceData();
+
+		rpa.storeData("system-performance-data", 0, spd);
+		assertTrue(rpa.isConnected());
+		rpa.disconnectClient();
 	}
 	
 }

@@ -14,6 +14,9 @@ package programmingtheiot.gda.app;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import programmingtheiot.common.ConfigConst;
+import programmingtheiot.common.ConfigUtil;
+
 /**
  * Main GDA application.
  * 
@@ -28,6 +31,8 @@ public class GatewayDeviceApp
 	public static final long DEFAULT_TEST_RUNTIME = 60000L;
 	
 	// private var's
+
+	private DeviceDataManager dataMgr = null;
 	
 	
 	// constructors
@@ -59,14 +64,29 @@ public class GatewayDeviceApp
 		GatewayDeviceApp gwApp = new GatewayDeviceApp(args);
 		
 		gwApp.startApp();
-		
-		try {
-			Thread.sleep(65000L);
-		} catch (InterruptedException e) {
-			// ignore
+
+		boolean runForever = ConfigUtil.getInstance().getBoolean(
+			ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_RUN_FOREVER_KEY);
+		if (runForever) {
+			_Logger.info("Running GDA forever.");
+			try {
+				while (true) {
+					Thread.sleep(2000L);
+				}
+			} catch (InterruptedException e) {
+				// ignore
+			}
+			gwApp.stopApp(0);
+		} else {
+			_Logger.info(String.format("Running GDA for %d seconds.", DEFAULT_TEST_RUNTIME));
+
+			try {
+				Thread.sleep(DEFAULT_TEST_RUNTIME);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+			gwApp.stopApp(0);
 		}
-		
-		gwApp.stopApp(0);
 	}
 	
 	
@@ -81,7 +101,13 @@ public class GatewayDeviceApp
 		_Logger.info("Starting GDA...");
 		
 		try {
-			// TODO: Your code here
+			if (!ConfigUtil.getInstance().getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.TEST_EMPTY_APP_KEY)) {
+				this.dataMgr = new DeviceDataManager();
+			}
+
+			if (this.dataMgr != null) {
+				this.dataMgr.startManager();
+			}
 			
 			_Logger.info("GDA started successfully.");
 		} catch (Exception e) {
@@ -101,8 +127,9 @@ public class GatewayDeviceApp
 		_Logger.info("Stopping GDA...");
 		
 		try {
-			// TODO: Your code here
-			
+			if (this.dataMgr != null) {
+				this.dataMgr.stopManager();
+			}
 			_Logger.log(Level.INFO, "GDA stopped successfully with exit code {0}.", code);
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Failed to cleanly stop GDA. Exiting.", e);
