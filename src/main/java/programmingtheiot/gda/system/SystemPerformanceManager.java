@@ -138,6 +138,7 @@ public class SystemPerformanceManager
 					Thread.currentThread().interrupt();
 				}
 			}
+			this.isStarted = false;
 		}
 		return true;
 	}
