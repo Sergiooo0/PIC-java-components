@@ -8,7 +8,6 @@
 
 package programmingtheiot.gda.connection;
 
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,8 +17,6 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
-import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import programmingtheiot.common.ConfigConst;
@@ -153,27 +150,80 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 
 	public boolean isConnected()
 	{
+		if (this.mqttClient != null) {
+			return this.mqttClient.isConnected();
+		}
 		return false;
 	}
 	
 	@Override
 	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos)
 	{
-		_Logger.info("Publishing message to topic: " + topicName.toString());
-		return false;
+		if (topicName == null) {
+			_Logger.warning("Invalid topic for publish.");
+			return false;
+		}
+
+		if (msg == null || msg.length() == 0) {
+			_Logger.warning("Invalid message for publish.");
+			return false;
+		}
+
+		if (qos < 0 || qos > 2) {
+			qos = ConfigConst.DEFAULT_QOS;
+		}
+
+		try{
+			byte[] payload = msg.getBytes();
+			MqttMessage message = new MqttMessage(payload);
+			message.setQos(qos);
+			this.mqttClient.publish(topicName.getResourceName(), message);
+			return true;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Failed to publish message to topic: " + topicName.toString(), e);
+			return false;
+		}
 	}
 
 	@Override
 	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos)
 	{
-		_Logger.info("Subscribing to topic: " + topicName.toString());
+		if (topicName ==null) {
+			_Logger.warning("Resource is null. Unable to subscribe to topic: " +this.brokerAddr);
+			return false;
+		}
+
+		if (qos <0 ||qos >2) {
+			qos=ConfigConst.DEFAULT_QOS;
+		}
+
+		try {
+			this.mqttClient.subscribe(topicName.getResourceName(),qos);
+			_Logger.info("Successfully subscribed to topic: " +topicName.getResourceName());
+			return true;
+		}catch (Exception e) {
+			_Logger.log(Level.SEVERE,"Failed to subscribe to topic: " +topicName,e);
+		}
+
 		return false;
 	}
 
 	@Override
 	public boolean unsubscribeFromTopic(ResourceNameEnum topicName)
 	{
-		_Logger.info("Unsubscribing from topic: " + topicName.toString());
+		if (topicName == null) {
+			_Logger.warning("Resource is null. Unable to unsubscribe from topic: " + this.brokerAddr);
+			return false;
+		}
+
+		try {
+			this.mqttClient.unsubscribe(topicName.getResourceName());
+			_Logger.info("Successfully unsubscribed from topic: " + topicName.getResourceName());
+			return true;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Failed to unsubscribe from topic: " + topicName, e);
+		}
+
 		return false;
 	}
 
