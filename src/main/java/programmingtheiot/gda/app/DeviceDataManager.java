@@ -11,30 +11,23 @@ package programmingtheiot.gda.app;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.qpid.proton.amqp.messaging.Data;
-
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IActuatorDataListener;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
-
 import programmingtheiot.data.ActuatorData;
 import programmingtheiot.data.DataUtil;
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
 import programmingtheiot.data.SystemStateData;
-
-import programmingtheiot.gda.connection.CloudClientConnector;
 import programmingtheiot.gda.connection.CoapServerGateway;
 import programmingtheiot.gda.connection.IPersistenceClient;
 import programmingtheiot.gda.connection.IPubSubClient;
 import programmingtheiot.gda.connection.IRequestResponseClient;
 import programmingtheiot.gda.connection.MqttClientConnector;
 import programmingtheiot.gda.connection.RedisPersistenceAdapter;
-import programmingtheiot.gda.connection.SmtpClientConnector;
 import programmingtheiot.gda.system.SystemPerformanceManager;
-
 import redis.clients.jedis.JedisPubSub;
 
 /**
@@ -204,6 +197,22 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			this.redisClient.connectClient();
 			this.redisClient.subscribeToChannel(this, ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
 		}
+		if (this.mqttClient != null) {
+			if (this.mqttClient.connectClient()){
+				_Logger.info("Starting MQTT client.");
+				int qos = ConfigUtil.getInstance().getInteger(
+					ConfigConst.GATEWAY_DEVICE, ConfigConst.DEFAULT_QOS_KEY);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
+			} else {
+				_Logger.warning("Unable to connect to MQTT broker. MQTT client will not be started.");
+				// TODO: handle this case
+				throw new RuntimeException("Unable to connect to MQTT broker. MQTT client will not be started.");
+
+			}
+		} 
 	}
 	
 	public void stopManager()
@@ -217,6 +226,21 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			_Logger.info("Stopping Redis client.");
 			this.redisClient.unsubscribeFromChannel(this);
 			this.redisClient.disconnectClient();
+		}
+		if (this.mqttClient != null) {
+			_Logger.info("Stopping MQTT client.");
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE);
+			if (this.mqttClient.disconnectClient()) {
+				_Logger.info("Successfully disconnected MQTT client from broker.");
+			} else {
+				_Logger.severe("Failed to disconnect MQTT client from broker.");
+				// TODO: handle this case
+				throw new RuntimeException("Failed to disconnect MQTT client from broker.");
+			}
+
 		}
 	}
 
@@ -256,6 +280,11 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 
 		this.enableSystemPerf = configUtil.getBoolean(
 			ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SYSTEM_PERF_KEY);
+
+		if (this.enableMqttClient) {
+			this.mqttClient = new MqttClientConnector();
+			this.mqttClient.setDataMessageListener(this);
+		}
 		
 		if (this.enableSystemPerf) {
 

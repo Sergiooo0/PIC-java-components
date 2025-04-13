@@ -9,7 +9,7 @@
 
 package programmingtheiot.part03.integration.connection;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.util.logging.Logger;
 
@@ -18,11 +18,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import programmingtheiot.common.ConfigConst;
-import programmingtheiot.common.ConfigUtil;
-import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
-import programmingtheiot.data.*;
-import programmingtheiot.gda.connection.*;
+import programmingtheiot.gda.connection.MqttClientConnector;
 
 /**
  * This test case class contains very basic integration tests for
@@ -63,21 +60,87 @@ public class MqttClientControlPacketTest
 	@Test
 	public void testConnectAndDisconnect()
 	{
-		// TODO: implement this test
+		boolean isConnected = this.mqttClient.connectClient();
+		assertTrue("Client failed to connect", isConnected);
+
+		// Wait to ensure Wireshark can capture CONNECT / CONNACK
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		boolean isDisconnected = this.mqttClient.disconnectClient();
+		assertTrue("Client failed to disconnect", isDisconnected);
+
+		// Wait again for DISCONNECT capture
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
+
 	
 	@Test
 	public void testServerPing()
 	{
-		// TODO: implement this test
+		this.mqttClient.connectClient();
+
+		// Wait longer than keep-alive to trigger PINGREQ / PINGRESP
+		int waitTimeSec = ConfigConst.DEFAULT_KEEP_ALIVE + 10;
+
+		try {
+			Thread.sleep(waitTimeSec * 1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		this.mqttClient.disconnectClient();
 	}
+
 	
 	@Test
 	public void testPubSub()
 	{
-		// TODO: implement this test
-		// 
-		// IMPORTANT: be sure to use QoS 1 and 2 to see ALL control packets
+		this.mqttClient.connectClient();
+
+		ResourceNameEnum topic = ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE;
+
+		// Subscribe (QoS 2)
+		assertTrue("Subscribe failed", this.mqttClient.subscribeToTopic(topic, 2));
+
+		// Wait for SUBSCRIBE/SUBACK
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		// Publish with QoS 1 (for PUBACK)
+		assertTrue("QoS 1 publish failed", this.mqttClient.publishMessage(topic, "QoS 1 message", 1));
+
+		// Publish with QoS 2 (for PUBREC, PUBREL, PUBCOMP)
+		assertTrue("QoS 2 publish failed", this.mqttClient.publishMessage(topic, "QoS 2 message", 2));
+
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		// Unsubscribe
+		assertTrue("Unsubscribe failed", this.mqttClient.unsubscribeFromTopic(topic));
+
+		// Wait for UNSUBSCRIBE/UNSUBACK
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		this.mqttClient.disconnectClient();
 	}
+
 	
 }
