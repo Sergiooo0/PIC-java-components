@@ -212,6 +212,13 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 				throw new RuntimeException("Unable to connect to MQTT broker. MQTT client will not be started.");
 
 			}
+		}
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.startServer()) {
+				_Logger.info("CoAP server started.");
+			} else {
+				_Logger.severe("Failed to start CoAP server. Check log file for details.");
+			}
 		} 
 	}
 	
@@ -241,6 +248,13 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 				throw new RuntimeException("Failed to disconnect MQTT client from broker.");
 			}
 
+		}
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.stopServer()) {
+				_Logger.info("CoAP server stopped.");
+			} else {
+				_Logger.severe("Failed to stop CoAP server. Check log file for details.");
+			}
 		}
 	}
 
@@ -294,6 +308,10 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 
 		if (this.enablePersistenceClient) {
 			this.redisClient = new RedisPersistenceAdapter();
+		}
+
+		if (this.enableCoapServer) {
+			this.coapServer = new CoapServerGateway(this);
 		}
 	}
 
