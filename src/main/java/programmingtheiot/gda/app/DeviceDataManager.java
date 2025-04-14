@@ -183,6 +183,11 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	
 	public void setActuatorDataListener(String name, IActuatorDataListener listener)
 	{
+		if (listener != null) {
+			this.actuatorDataListener = listener;
+		} else {
+			_Logger.warning("Actuator data listener is null.");
+		}
 	}
 	
 	public void startManager()
@@ -318,6 +323,15 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	private void handleIncomingDataAnalysis(ResourceNameEnum resourceName, ActuatorData data)
 	{
 		_Logger.info("Handling incoming data analysis (actuator) for resource: " + resourceName.toString());
+
+		if (data.isResponseFlagEnabled()) {
+			_Logger.info("Handling incoming data analysis (actuator) for resource: " + resourceName.toString());
+			if (this.actuatorDataListener != null) {
+				this.actuatorDataListener.onActuatorDataUpdate(data);
+			}
+		} else {
+			_Logger.warning("Actuator data is not a response. Ignoring.");
+		}
 	}
 
 	private void handleIncomingDataAnalysis(ResourceNameEnum resourceName, SystemStateData data)
