@@ -205,8 +205,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		if (this.mqttClient != null) {
 			if (this.mqttClient.connectClient()){
 				_Logger.info("Starting MQTT client.");
-				int qos = ConfigUtil.getInstance().getInteger(
-					ConfigConst.GATEWAY_DEVICE, ConfigConst.DEFAULT_QOS_KEY);
+				int qos = ConfigUtil.getInstance().getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.DEFAULT_QOS_KEY);
 				this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos);
 				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
 				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
