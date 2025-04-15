@@ -80,6 +80,7 @@ enableSystemPerformance = True
 testGdaDataPath         = /tmp/gda-data
 testCdaDataPath         = /tmp/cda-data
 testEmptyApp            = False
+enableRunForever        = True
 
 [Data.GatewayService]
 credFile = ./cred/PiotPersistenceCred.props
