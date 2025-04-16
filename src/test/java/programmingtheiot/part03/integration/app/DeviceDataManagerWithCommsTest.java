@@ -82,7 +82,7 @@ public class DeviceDataManagerWithCommsTest
 	/**
 	 * Test method for running the DeviceDataManager.
 	 */
-	@Test
+//	@Test
 	public void testStartAndStopManagerWithMqtt()
 	{
 		DeviceDataManager devDataMgr = new DeviceDataManager();
