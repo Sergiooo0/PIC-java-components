@@ -253,7 +253,7 @@ public boolean connectClient()
 	@Override
 	public void messageArrived(String topic, MqttMessage msg) throws Exception
 	{
-		_Logger.info("MQTT message arrived on topic: '" + topic + "'");
+		_Logger.info("MQTT message arrived on topic: '" + topic + "'" + "\nwith payload: " + msg.toString());
 	}
 
 	

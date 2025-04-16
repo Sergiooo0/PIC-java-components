@@ -242,7 +242,9 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		if (this.redisClient != null) {
 			_Logger.info("Starting Redis client.");
 			this.redisClient.connectClient();
-			this.redisClient.subscribeToChannel(this, ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
+			//Teniendo MQTT y Redis, no es necesario subscribirse a los canales de Redis
+			// redis sólo para almacenamiento persistente.
+			//this.redisClient.subscribeToChannel(this, ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
 		}
 		if (this.mqttClient != null) {
 			if (this.mqttClient.connectClient()){
@@ -272,7 +274,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		}
 		if (this.redisClient != null) {
 			_Logger.info("Stopping Redis client.");
-			this.redisClient.unsubscribeFromChannel(this);
+			//this.redisClient.unsubscribeFromChannel(this);
 			this.redisClient.disconnectClient();
 		}
 		if (this.mqttClient != null) {
