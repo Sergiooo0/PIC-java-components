@@ -186,7 +186,6 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	{
 		_Logger.info("Handling sensor message for resource: " + resourceName.toString());
 		if (data != null) {
-			_Logger.info("Handling sensor message");
 			if (data.hasError()) {
 				_Logger.log(Level.WARNING, "Received sensor with error of status code: {0}", data.getStatusCode());
 			} else {
@@ -382,19 +381,19 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	}
 
 	private void handleHumiditySensorAnalysis(ResourceNameEnum resource, SensorData data) {
-		_Logger.fine("Analyzing humidity data from CDA: " + data.getLocationID() + ". Value: " + data.getValue());
+		_Logger.info("Analyzing humidity data from CDA: " + data.getLocationID() + ". Value: " + data.getValue());
 
 		boolean isLow = data.getValue() < this.triggerHumidifierFloor;
 		boolean isHigh = data.getValue() > this.triggerHumidifierCeiling;
 
 		if (isLow || isHigh) {
-			_Logger.fine("Humidity data from CDA exceeds nominal range.");
+			_Logger.info("Humidity data from CDA exceeds nominal range.");
 
 			if (this.latestHumiditySensorData == null) {
 				this.latestHumiditySensorData = data;
 				this.latestHumiditySensorTimeStamp = getDateTimeFromData(data);
 
-				_Logger.fine(
+				_Logger.info(
 					"Starting humidity nominal exception timer. Waiting for seconds: " +
 					this.humidityMaxTimePastThreshold);
 				return;
@@ -402,7 +401,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 				OffsetDateTime curHumiditySensorTimeStamp = getDateTimeFromData(data);
 				long diffSeconds = ChronoUnit.SECONDS.between(this.latestHumiditySensorTimeStamp, curHumiditySensorTimeStamp);
 
-				_Logger.fine("Checking Humidity value exception time delta: " + diffSeconds);
+				_Logger.info("Checking Humidity value exception time delta: " + diffSeconds);
 
 				if (diffSeconds >= this.humidityMaxTimePastThreshold) {
 					ActuatorData ad = new ActuatorData();
@@ -442,7 +441,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 					this.latestHumiditySensorData = null;
 					this.latestHumiditySensorTimeStamp = null;
 				} else {
-					_Logger.fine("Humidifier is still on. Not yet at nominal levels (OK).");
+					_Logger.info("Humidifier is still on. Not yet at nominal levels (OK).");
 				}
 			} else {
 				_Logger.warning("ERROR: ActuatorData for humidifier is null (shouldn't be). Can't send command.");
