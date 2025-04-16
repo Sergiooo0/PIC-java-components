@@ -253,7 +253,6 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 				_Logger.warning("Unable to connect to MQTT broker. MQTT client will not be started.");
 				// TODO: handle this case
 				throw new RuntimeException("Unable to connect to MQTT broker. MQTT client will not be started.");
-
 			}
 		}
 		if (this.enableCoapServer && this.coapServer != null) {

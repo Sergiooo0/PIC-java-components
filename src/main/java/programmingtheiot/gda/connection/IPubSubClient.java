@@ -8,6 +8,8 @@
 
 package programmingtheiot.gda.connection;
 
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 
@@ -66,6 +68,10 @@ public interface IPubSubClient
 	 * @param topicEnum The topic Enum containing the topic value to unsubscribe from.
 	 * @return bool True on success, False otherwise.
 	 */
+
+	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos, IMqttMessageListener listener);
+
+	
 	public boolean unsubscribeFromTopic(ResourceNameEnum topicName);
 
 	/**
