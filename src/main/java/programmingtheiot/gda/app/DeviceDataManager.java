@@ -8,6 +8,8 @@
 
 package programmingtheiot.gda.app;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,6 +19,7 @@ import programmingtheiot.common.IActuatorDataListener;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.data.ActuatorData;
+import programmingtheiot.data.BaseIotData;
 import programmingtheiot.data.DataUtil;
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
@@ -60,6 +63,22 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	private CoapServerGateway coapServer = null;
 	private RedisPersistenceAdapter redisClient = null;
 	private SystemPerformanceManager sysPerfMgr = null;
+
+	private ActuatorData latestHumidifierActuatorData =null;
+	private ActuatorData latestHumidifierActuatorResponse =null;
+	private SensorData latestHumiditySensorData =null;
+	private OffsetDateTime latestHumiditySensorTimeStamp =null;
+
+	private boolean handleHumidityChangeOnDevice =false;// optional
+	private int lastKnownHumidifierCommand   =ConfigConst.OFF_COMMAND;
+
+
+	private long humidityMaxTimePastThreshold =300;// seconds
+	private float nominalHumiditySetting   =40.0f;
+	private float triggerHumidifierFloor   =30.0f;
+	private float triggerHumidifierCeiling =50.0f;
+
+
 	
 	// constructors
 	
@@ -84,6 +103,22 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		this.enablePersistenceClient =
 			configUtil.getBoolean(
 				ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_PERSISTENCE_CLIENT_KEY);
+
+		this.handleHumidityChangeOnDevice = 
+			configUtil.getBoolean(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.HANDLE_HUMIDITY);
+		this.humidityMaxTimePastThreshold = 
+			configUtil.getInteger(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.HUMIDITY_MAX_TIME_PAST_THRESHOLD, 300);// seconds
+		this.nominalHumiditySetting   =
+			configUtil.getFloat(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.NOMINAL_HUMIDITY_SETTING, 40.0f);
+		this.triggerHumidifierFloor   =
+			configUtil.getFloat(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.TRIGGER_HUMIDIFIER_FLOOR, 30.0f);
+		this.triggerHumidifierCeiling =
+			configUtil.getFloat(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.TRIGGER_HUMIDIFIER_CEILING, 50.0f);
 
 		initConnections();
 	}
@@ -155,9 +190,16 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			if (data.hasError()) {
 				_Logger.log(Level.WARNING, "Received sensor with error of status code: {0}", data.getStatusCode());
 			} else {
+				String jsonData = dataUtil.sensorDataToJson(data);
+				_Logger.fine("JSON [SensorData] -> " +jsonData);
+				int qos = ConfigUtil.getInstance().getInteger(
+					ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.DEFAULT_QOS_KEY, 0);
 				if (this.redisClient != null) {
-					this.redisClient.storeData(data.getName(), 0, data);
+					this.redisClient.storeData(data.getName(), qos, data);
 				}
+				this.handleIncomingDataAnalysis(resourceName,data);
+
+				this.handleUpstreamTransmission(resourceName,jsonData,qos);
 			}
 			return true;
 		}
@@ -327,6 +369,121 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			_Logger.warning("Actuator data is not a response. Ignoring.");
 		}
 	}
+
+	private void handleIncomingDataAnalysis(ResourceNameEnum resource, SensorData data)
+	{
+		// check either resource or SensorData for type
+		if (data.getTypeID() ==ConfigConst.HUMIDITY_SENSOR_TYPE) {
+			this.handleHumiditySensorAnalysis(resource,data);
+			handleUpstreamTransmission(resource, DataUtil.getInstance().sensorDataToJson(data), 0);
+
+		}
+	}
+
+	private void handleHumiditySensorAnalysis(ResourceNameEnum resource, SensorData data) {
+		_Logger.fine("Analyzing humidity data from CDA: " + data.getLocationID() + ". Value: " + data.getValue());
+
+		boolean isLow = data.getValue() < this.triggerHumidifierFloor;
+		boolean isHigh = data.getValue() > this.triggerHumidifierCeiling;
+
+		if (isLow || isHigh) {
+			_Logger.fine("Humidity data from CDA exceeds nominal range.");
+
+			if (this.latestHumiditySensorData == null) {
+				this.latestHumiditySensorData = data;
+				this.latestHumiditySensorTimeStamp = getDateTimeFromData(data);
+
+				_Logger.fine(
+					"Starting humidity nominal exception timer. Waiting for seconds: " +
+					this.humidityMaxTimePastThreshold);
+				return;
+			} else {
+				OffsetDateTime curHumiditySensorTimeStamp = getDateTimeFromData(data);
+				long diffSeconds = ChronoUnit.SECONDS.between(this.latestHumiditySensorTimeStamp, curHumiditySensorTimeStamp);
+
+				_Logger.fine("Checking Humidity value exception time delta: " + diffSeconds);
+
+				if (diffSeconds >= this.humidityMaxTimePastThreshold) {
+					ActuatorData ad = new ActuatorData();
+					ad.setName(ConfigConst.HUMIDIFIER_ACTUATOR_NAME);
+					ad.setLocationID(data.getLocationID());
+					ad.setTypeID(ConfigConst.HUMIDIFIER_ACTUATOR_TYPE);
+					ad.setValue(this.nominalHumiditySetting);
+
+					if (isLow) {
+						ad.setCommand(ConfigConst.ON_COMMAND);
+					} else if (isHigh) {
+						ad.setCommand(ConfigConst.OFF_COMMAND);
+					}
+
+					_Logger.info("Humidity exceptional value reached. Sending actuation event to CDA: " + ad);
+
+					this.lastKnownHumidifierCommand = ad.getCommand();
+					sendActuatorCommandtoCda(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, ad);
+
+					this.latestHumidifierActuatorData = ad;
+					this.latestHumiditySensorData = null;
+					this.latestHumiditySensorTimeStamp = null;
+				}
+			}
+		} else if (this.lastKnownHumidifierCommand == ConfigConst.ON_COMMAND) {
+			if (this.latestHumidifierActuatorData != null) {
+				if (data.getValue() >= this.nominalHumiditySetting) {
+					this.latestHumidifierActuatorData.setCommand(ConfigConst.OFF_COMMAND);
+
+					_Logger.info("Humidity nominal value reached. Sending OFF actuation event to CDA: " +
+						this.latestHumidifierActuatorData);
+
+					sendActuatorCommandtoCda(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, this.latestHumidifierActuatorData);
+
+					this.lastKnownHumidifierCommand = this.latestHumidifierActuatorData.getCommand();
+					this.latestHumidifierActuatorData = null;
+					this.latestHumiditySensorData = null;
+					this.latestHumiditySensorTimeStamp = null;
+				} else {
+					_Logger.fine("Humidifier is still on. Not yet at nominal levels (OK).");
+				}
+			} else {
+				_Logger.warning("ERROR: ActuatorData for humidifier is null (shouldn't be). Can't send command.");
+			}
+		}
+	}
+
+
+	private void sendActuatorCommandtoCda(ResourceNameEnum resource, ActuatorData data)
+	{
+		if (this.actuatorDataListener != null) {
+			this.actuatorDataListener.onActuatorDataUpdate(data);
+		}
+
+		if (this.enableMqttClient && this.mqttClient != null) {
+			String jsonData = DataUtil.getInstance().actuatorDataToJson(data);
+
+			if (this.mqttClient.publishMessage(resource, jsonData, ConfigConst.DEFAULT_QOS)) {
+				_Logger.info("Published ActuatorData command from GDA to CDA: " + data.getCommand());
+			} else {
+				_Logger.warning("Failed to publish ActuatorData command from GDA to CDA: " + data.getCommand());
+			}
+		}
+		if (this.enablePersistenceClient && this.redisClient != null) {
+			this.redisClient.storeData(data.getName(), 0, data);
+		}
+		
+	}
+
+	private OffsetDateTime getDateTimeFromData(BaseIotData data)
+	{
+		OffsetDateTime odt = null;
+
+		try {
+			odt = OffsetDateTime.parse(data.getTimeStamp());
+		} catch (Exception e) {
+			_Logger.warning("Failed to extract ISO 8601 timestamp from IoT data. Using local current time.");
+			odt = OffsetDateTime.now();
+		}
+		return odt;
+	}
+
 
 	private void handleIncomingDataAnalysis(ResourceNameEnum resourceName, SystemStateData data)
 	{
