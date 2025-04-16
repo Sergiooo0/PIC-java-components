@@ -128,6 +128,10 @@ public class RedisPersistenceAdapter implements IPersistenceClient
         }
 
         try {
+            if (!"list".equals(jedis.type(topic))) {
+                _Logger.warning("Redis key type mismatch for topic '" + topic + "'. Deleting existing key.");
+                jedis.del(topic);
+            }
             for (ActuatorData d : data) {
                 String jsonData = DataUtil.getInstance().actuatorDataToJson(d);
 				// TODO: Add timestamp to data
@@ -153,8 +157,13 @@ public class RedisPersistenceAdapter implements IPersistenceClient
         }
 
         try {
+            if (!"list".equals(jedis.type(topic))) {
+                _Logger.warning("Redis key type mismatch for topic '" + topic + "'. Deleting existing key.");
+                jedis.del(topic);
+            }
             for (SensorData d : data) {
                 String jsonData = DataUtil.getInstance().sensorDataToJson(d);
+                
                 this.jedis.lpush(topic, jsonData);
                 _Logger.info("Stored data in Redis at topic: " + topic);
             }
@@ -176,8 +185,13 @@ public class RedisPersistenceAdapter implements IPersistenceClient
         }
 
         try {
+            if (!"list".equals(jedis.type(topic))) {
+				_Logger.warning("Redis key type mismatch for topic '" + topic + "'. Deleting existing key.");
+				jedis.del(topic);
+			}
             for (SystemPerformanceData d : data) {
                 String jsonData = DataUtil.getInstance().systemPerformanceDataToJson(d);
+
                 this.jedis.lpush(topic, jsonData);
                 _Logger.info("Stored SystemPerformanceData in Redis at topic: " + topic);
             }

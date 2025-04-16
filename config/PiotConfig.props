@@ -86,7 +86,7 @@ enableRunForever        = True
 handleHumidityChangeOnDevice = True
 
 # min seconds between readings before triggering actuation event
-humidityMaxTimePastThreshold = 300
+humidityMaxTimePastThreshold = 10
 
 # ideal average humidity level (% relative)
 nominalHumiditySetting       = 40.0

@@ -500,7 +500,7 @@ class SensorDataMessageListener implements IMqttMessageListener {
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		try {
 			SensorData sensorData = DataUtil.getInstance().jsonToSensorData(new String(message.getPayload()));
-			_Logger.info("Received SensorData: " + sensorData.getValue());
+			_Logger.info("Received SensorData: " + sensorData.getValue() + " of sensor:" + sensorData.getName());
 
 			if (this.dataMsgListener != null) {
 				this.dataMsgListener.handleSensorMessage(resource, sensorData);
