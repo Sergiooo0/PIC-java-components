@@ -84,6 +84,8 @@ public class DeviceDataManagerWithCommsTest
 		devDataMgr.startManager();
 		
 		IPubSubClient mqttClient = new MqttClientConnector();
+		// al hacer startManager() se crea el cliente mqtt
+		// crear todo provoca problemas en la conexión debido a que tienen el mismo ID.
 		mqttClient.connectClient();
 		
 		SensorData sd = new SensorData();

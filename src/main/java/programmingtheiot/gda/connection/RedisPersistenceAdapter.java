@@ -90,7 +90,7 @@ public class RedisPersistenceAdapter implements IPersistenceClient
 				this.jedis.connect();
 				return true;
 			} catch (JedisConnectionException e) {
-				_Logger.log(Level.SEVERE, "Error connecting to Redis", e);
+				_Logger.log(Level.SEVERE, "Error connecting to Redis. Probably the server is not running.");
 				return false;
 			}
 		}
