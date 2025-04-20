@@ -182,11 +182,36 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	@Override
 	public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
 	{
-		_Logger.info("Handling incoming message for resource: " + resourceName.toString());
-		if (msg != null) {
-			_Logger.info("Handling incoming message: " + msg);
-			return true;
+		if (resourceName != null && msg != null) {
+			try {
+				if (resourceName == ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE) {
+					_Logger.info("Handling incoming ActuatorData message: " + msg);
+
+					ActuatorData ad = DataUtil.getInstance().jsonToActuatorData(msg);
+					String jsonData = DataUtil.getInstance().actuatorDataToJson(ad);
+
+					if (this.mqttClient != null) {
+						int qos = ConfigUtil.getInstance().getInteger(
+							ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.DEFAULT_QOS_KEY, ConfigConst.DEFAULT_QOS);
+						_Logger.fine("Publishing data to MQTT broker: " + jsonData);
+						return this.mqttClient.publishMessage(resourceName, jsonData, qos);
+					}
+					// TODO: If the GDA is hosting a CoAP server (or a CoAP client that
+					// will connect to the CDA's CoAP server), you can add that logic here
+					// in place of the MQTT client or in addition
+
+				} else {
+					_Logger.warning("Failed to parse incoming message. Unknown type: " + msg);
+
+					return false;
+				}
+			} catch (Exception e) {
+				_Logger.log(Level.WARNING, "Failed to process incoming message for resource: " + resourceName, e);
+			}
+		} else {
+			_Logger.warning("Incoming message has no data. Ignoring for resource: " + resourceName);
 		}
+
 		return false;
 	}
 

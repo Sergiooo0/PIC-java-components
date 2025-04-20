@@ -133,7 +133,7 @@ public class CloudClientConnectorTest
 			// of the sleep cycle may need to be manually adjusted to
 			// allow the connection to complete
 			
-			Thread.sleep(2000L);
+			Thread.sleep(5000L);
 		} catch (Exception e) {
 			// ignore
 		}
@@ -199,5 +199,54 @@ public class CloudClientConnectorTest
 			// ignore
 		}
 	}
-	
+
+	@Test
+	public void testPublishSensorData()
+	{
+		this.cloudClient.setDataMessageListener(new DefaultDataMessageListener());
+		
+		assertTrue(this.cloudClient.connectClient());
+		
+		try {
+			// sleep for a couple of seconds or so...
+			
+			Thread.sleep(30000L);
+		} catch (Exception e) {
+			// ignore
+		}
+		SensorData sensorData = new SensorData();
+		sensorData.setName(ConfigConst.TEMP_SENSOR_NAME);
+		sensorData.setValue(50.0f);
+		assertTrue(this.cloudClient.sendEdgeDataToCloud(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, sensorData));
+
+		assertTrue(this.cloudClient.disconnectClient());
+		
+		_Logger.info("Test complete.");
+	}	
+
+	@Test
+	public void testLedActuator(){
+		this.cloudClient.setDataMessageListener(new DefaultDataMessageListener());
+		
+		assertTrue(this.cloudClient.connectClient());
+		
+		try {
+			// sleep for a couple of seconds or so...
+			
+			Thread.sleep(30000L);
+		} catch (Exception e) {
+			// ignore
+		}
+		
+		//assertTrue(this.cloudClient.sendEdgeDataToCloud(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, "LED_ON"));
+		
+		assertTrue(this.cloudClient.disconnectClient());
+		
+		_Logger.info("Test complete.");
+	}
+
+	@Test
+	public void testGDA(){
+		
+	}
 }

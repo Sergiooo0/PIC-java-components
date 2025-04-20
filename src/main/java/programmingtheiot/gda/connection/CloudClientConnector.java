@@ -11,10 +11,14 @@ package programmingtheiot.gda.connection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
+import programmingtheiot.data.ActuatorData;
 import programmingtheiot.data.DataUtil;
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
@@ -23,7 +27,7 @@ import programmingtheiot.data.SystemPerformanceData;
  * Shell representation of class for student implementation.
  *
  */
-public class CloudClientConnector implements ICloudClient
+public class CloudClientConnector implements ICloudClient, IConnectionListener
 {
 	// static
 	
@@ -74,12 +78,8 @@ public class CloudClientConnector implements ICloudClient
 			// TODO: either line should work with recent updates to `MqttClientConnector`
 			// this.mqttClient = new MqttClientConnector(true);
 			this.mqttClient = new MqttClientConnector(ConfigConst.CLOUD_GATEWAY_SERVICE);
+			this.mqttClient.setConnectionListener(this);
 		}
-
-		// NOTE: If MqttClientConnector is using the async client, we won't have a complete
-		// connection to the cloud-hosted MQTT broker until MqttClientConnector's
-		// connectComplete() callback is invoked. The details pertaining to the use
-		// of IConnectionListener are covered in PIOT-GDA-11-001 and PIOT-GDA-11-004.
 		return this.mqttClient.connectClient();
 	}
 
@@ -214,6 +214,37 @@ public class CloudClientConnector implements ICloudClient
 	
 		return success;
 	}
+
+	// public methods - IConnectionListener
+	@Override
+	public void onConnect()
+	{
+		_Logger.info("Handling CSP subscriptions and device topic provisioninig...");
+
+		LedEnablementMessageListener ledListener = new LedEnablementMessageListener(this.dataMsgListener);
+
+		// topic may not exist yet, so create a 'response' actuation event with invalid value -
+		// this will create the relevant topic if it doesn't yet exist, which ensures
+		// the message listener (if coded correctly) will log a message but ignore the
+		// actuation command and NOT pass it onto the IDataMessageListener instance
+		ActuatorData ad = new ActuatorData();
+		ad.setAsResponse();
+		ad.setName(ConfigConst.LED_ACTUATOR_NAME);
+		ad.setValue((float) -1.0); // NOTE: this just needs to be an invalid actuation value
+
+		String ledTopic = createTopicName(ledListener.getResource().getDeviceName(), ad.getName());
+		String adJson = DataUtil.getInstance().actuatorDataToJson(ad);
+
+		this.publishMessageToCloud(ledTopic, adJson);
+
+		this.mqttClient.subscribeToTopic(ledTopic, this.qosLevel, ledListener);
+	}
+
+	@Override
+	public void onDisconnect()
+	{
+		_Logger.info("MQTT client disconnected. Nothing else to do.");
+	}
 	
 	
 	// private methods
@@ -222,9 +253,24 @@ public class CloudClientConnector implements ICloudClient
 		return createTopicName(resource.getDeviceName(), resource.getResourceType());
 	}
 
+	private String createTopicName(ResourceNameEnum resource, String itemName)
+	{
+		return (createTopicName(resource) + "-" + itemName).toLowerCase();
+	}
+	
 	private String createTopicName(String deviceName, String resourceTypeName)
 	{
-		return this.topicPrefix + deviceName + "/" + resourceTypeName;
+		StringBuilder buf = new StringBuilder();
+	
+		if (deviceName != null && deviceName.trim().length() > 0) {
+			buf.append(topicPrefix).append(deviceName);
+		}
+	
+		if (resourceTypeName != null && resourceTypeName.trim().length() > 0) {
+			buf.append('/').append(resourceTypeName);
+		}
+	
+		return buf.toString().toLowerCase();
 	}
 	
 	private boolean publishMessageToCloud(ResourceNameEnum resource, String itemName, String payload) {
@@ -273,4 +319,68 @@ public class CloudClientConnector implements ICloudClient
 		return false;
 	}
 	
+}
+
+class LedEnablementMessageListener implements IMqttMessageListener
+{
+	private static final Logger _Logger =
+		Logger.getLogger(LedEnablementMessageListener.class.getName());
+	
+	private IDataMessageListener dataMsgListener = null;
+
+	private ResourceNameEnum resource = ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE;
+
+	private int    typeID   = ConfigConst.LED_ACTUATOR_TYPE;
+	private String itemName = ConfigConst.LED_ACTUATOR_NAME;
+
+	LedEnablementMessageListener(IDataMessageListener dataMsgListener)
+	{
+		this.dataMsgListener = dataMsgListener;
+	}
+
+	public ResourceNameEnum getResource()
+	{
+		return this.resource;
+	}
+
+	@Override
+	public void messageArrived(String topic, MqttMessage message) throws Exception
+	{
+		try {
+			String jsonData = new String(message.getPayload());
+
+			ActuatorData actuatorData =
+				DataUtil.getInstance().jsonToActuatorData(jsonData);
+
+			actuatorData.setLocationID(ConfigConst.CONSTRAINED_DEVICE);
+			actuatorData.setTypeID(this.typeID);
+			actuatorData.setName(this.itemName);
+
+			int val = (int) actuatorData.getValue();
+
+			switch (val) {
+				case ConfigConst.ON_COMMAND:
+					_Logger.info("Received LED enablement message [ON].");
+					actuatorData.setStateData("LED switching ON");
+					break;
+
+				case ConfigConst.OFF_COMMAND:
+					_Logger.info("Received LED enablement message [OFF].");
+					actuatorData.setStateData("LED switching OFF");
+					break;
+
+				default:
+					return;
+			}
+			// Option 2: using ActuatorData
+			
+			if (this.dataMsgListener != null) {
+				this.dataMsgListener.handleActuatorCommandRequest(
+					ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, actuatorData);
+			}
+		} catch (Exception e) {
+			_Logger.warning("Failed to convert message payload to ActuatorData.");
+		}
+	}
+
 }
