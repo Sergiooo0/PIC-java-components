@@ -277,7 +277,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public void connectionLost(Throwable t)
 	{
-		_Logger.log(Level.WARNING, "Lost connection to MQTT broker: " + this.brokerAddr, t);
+		_Logger.log(Level.WARNING, "Lost connection to MQTT broker: " + this.brokerAddr, t.getMessage());
 	}
 	
 	@Override
@@ -343,7 +343,8 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		// NOTE: updated from Lab Module 07 - attempt to load clientID from configuration file
 		this.clientID =
 			configUtil.getProperty(
-				ConfigConst.GATEWAY_DEVICE, ConfigConst.DEVICE_LOCATION_ID_KEY, MqttClient.generateClientId());
+				configSectionName, ConfigConst.DEVICE_LOCATION_ID_KEY, MqttClient.generateClientId());
+
 
 		// these are specific to the MQTT connection which will be used during connect
 		this.persistence = new MemoryPersistence();

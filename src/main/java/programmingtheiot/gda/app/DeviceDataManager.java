@@ -247,16 +247,12 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	public void startManager()
 	{
 		_Logger.info("Starting device data manager.");
-		if (this.sysPerfMgr != null) {
-			_Logger.info("Starting system performance manager.");
-			this.sysPerfMgr.startManager();
-		}
-		if (this.redisClient != null) {
-			_Logger.info("Starting Redis client.");
-			this.redisClient.connectClient();
-			//Teniendo MQTT y Redis, no es necesario subscribirse a los canales de Redis
-			// redis sólo para almacenamiento persistente.
-			//this.redisClient.subscribeToChannel(this, ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
+		if (this.enableCloudClient && this.cloudClient != null) {
+			if (this.cloudClient.connectClient()) {
+				_Logger.info("Starting cloud client.");
+			} else {
+				_Logger.warning("Unable to connect to cloud service. Cloud client will not be started.");
+			}
 		}
 		if (this.mqttClient != null) {
 			if (this.mqttClient.connectClient()){
@@ -267,13 +263,31 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 				throw new RuntimeException("Unable to connect to MQTT broker. MQTT client will not be started.");
 			}
 		}
+		// give some time for the MQTT client to connect
+		try {
+			Thread.sleep(2000L);
+		} catch (Exception e) {
+			// ignore
+		}
 		if (this.enableCoapServer && this.coapServer != null) {
 			if (this.coapServer.startServer()) {
 				_Logger.info("CoAP server started.");
 			} else {
 				_Logger.severe("Failed to start CoAP server. Check log file for details.");
 			}
-		} 
+		}
+		
+		if (this.redisClient != null) {
+			_Logger.info("Starting Redis client.");
+			this.redisClient.connectClient();
+			//Teniendo MQTT y Redis, no es necesario subscribirse a los canales de Redis
+			// redis sólo para almacenamiento persistente.
+			//this.redisClient.subscribeToChannel(this, ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
+		}
+		if (this.sysPerfMgr != null) {
+			_Logger.info("Starting system performance manager.");
+			this.sysPerfMgr.startManager();
+		}
 	}
 	
 	public void stopManager()

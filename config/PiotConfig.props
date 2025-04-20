@@ -23,6 +23,7 @@ enableAuth     = True
 enableCrypt    = True
 baseUrl        = 
 baseTopic      = /v1.6/devices
+deviceLocationID = gatewaydevice001_cloud
 
 #
 # SMTP client configuration information
@@ -49,6 +50,7 @@ keepAlive      = 30
 enableAuth     = False
 enableCrypt    = False
 useAsyncClient = True
+deviceLocationID = gatewaydevice001
 
 #
 # CoAP client and server configuration information
