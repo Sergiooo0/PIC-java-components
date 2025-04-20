@@ -72,7 +72,8 @@ public class CloudClientConnectorTest
 	/**
 	 * Test method for {@link programmingtheiot.gda.connection.UbidotsMqttCloudClientConnector#connectClient()}.
 	 */
-//	@Test
+
+	 @Test
 	public void testCloudClientConnectAndDisconnect()
 	{
 		this.cloudClient.setDataMessageListener(new DefaultDataMessageListener());
@@ -82,7 +83,7 @@ public class CloudClientConnectorTest
 		try {
 			// sleep for a minute or so...
 			
-			Thread.sleep(60000L);
+			Thread.sleep(30000L);
 		} catch (Exception e) {
 			// ignore
 		}
@@ -117,7 +118,7 @@ public class CloudClientConnectorTest
 	/**
 	 * Test method for {@link programmingtheiot.gda.connection.UbidotsMqttCloudClientConnector#publishMessage(programmingtheiot.common.ResourceNameEnum, java.lang.String, int)}.
 	 */
-//	@Test
+	@Test
 	public void testPublishAndSubscribe()
 	{
 		this.cloudClient.setDataMessageListener(new DefaultDataMessageListener());

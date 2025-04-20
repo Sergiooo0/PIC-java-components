@@ -25,10 +25,12 @@ import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
 import programmingtheiot.data.SystemStateData;
 import programmingtheiot.gda.connection.CoapServerGateway;
+import programmingtheiot.gda.connection.ICloudClient;
 import programmingtheiot.gda.connection.IPersistenceClient;
 import programmingtheiot.gda.connection.IPubSubClient;
 import programmingtheiot.gda.connection.IRequestResponseClient;
 import programmingtheiot.gda.connection.MqttClientConnector;
+import programmingtheiot.gda.connection.CloudClientConnector;
 import programmingtheiot.gda.connection.RedisPersistenceAdapter;
 import programmingtheiot.gda.system.SystemPerformanceManager;
 import redis.clients.jedis.JedisPubSub;
@@ -57,7 +59,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	
 	private IActuatorDataListener actuatorDataListener = null;
 	private IPubSubClient mqttClient = null;
-	private IPubSubClient cloudClient = null;
+	private ICloudClient cloudClient = null;
 	private IPersistenceClient persistenceClient = null;
 	private IRequestResponseClient smtpClient = null;
 	private CoapServerGateway coapServer = null;
@@ -157,13 +159,20 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	{
 		if(data != null) {
 			_Logger.info("Handling actuator command request for resource: " + data.getName());
+			_Logger.log(
+			Level.FINE,
+			"Actuator request received: {0}. Message: {1}",
+			new Object[] {resourceName.getResourceName(), Integer.valueOf((data.getCommand()))});
 		
 			if (data.hasError()) {
 				_Logger.log(Level.WARNING, "Received actuator with error of status code: {0}", data.getStatusCode());
 			} else {
+				int qos = ConfigUtil.getInstance().getInteger(
+					ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.DEFAULT_QOS_KEY, 0);
 				if (this.redisClient != null) {
-					this.redisClient.storeData(data.getName(), 0, data);
+					this.redisClient.storeData(data.getName(), qos, data);
 				}
+				this.sendActuatorCommandtoCda(resourceName, data);
 			}
 			return true;
 		}
@@ -189,8 +198,8 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			if (data.hasError()) {
 				_Logger.log(Level.WARNING, "Received sensor with error of status code: {0}", data.getStatusCode());
 			} else {
-				String jsonData = dataUtil.sensorDataToJson(data);
-				_Logger.fine("JSON [SensorData] -> " +jsonData);
+				//String jsonData = dataUtil.sensorDataToJson(data);
+				//_Logger.fine("JSON [SensorData] -> " +jsonData);
 				int qos = ConfigUtil.getInstance().getInteger(
 					ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.DEFAULT_QOS_KEY, 0);
 				if (this.redisClient != null) {
@@ -198,7 +207,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 				}
 				this.handleIncomingDataAnalysis(resourceName,data);
 
-				this.handleUpstreamTransmission(resourceName,jsonData,qos);
+				this.handleUpstreamTransmission(resourceName,data,qos);
 			}
 			return true;
 		}
@@ -214,8 +223,12 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			if (data.hasError()) {
 				_Logger.log(Level.WARNING, "Received system performance with error of status code: {0}", data.getStatusCode());
 			}
-			// transform the data into a JSON string with DataUtil
-			String json = dataUtil.systemPerformanceDataToJson(data);
+			int qos = ConfigUtil.getInstance().getInteger(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.DEFAULT_QOS_KEY, 0);
+			if (this.redisClient != null) {
+				this.redisClient.storeData(data.getName(), qos, data);
+			}
+			this.handleUpstreamTransmission(resourceName, data,qos);
 			_Logger.info("Handled system performance message");
 			return true;
 		}
@@ -354,6 +367,11 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		if (this.enableCoapServer) {
 			this.coapServer = new CoapServerGateway(this);
 		}
+
+		if (this.enableCloudClient) {
+			this.cloudClient = new CloudClientConnector();
+			this.cloudClient.setDataMessageListener(this);
+		}
 	}
 
 	private void handleIncomingDataAnalysis(ResourceNameEnum resourceName, ActuatorData data)
@@ -375,7 +393,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		// check either resource or SensorData for type
 		if (data.getTypeID() ==ConfigConst.HUMIDITY_SENSOR_TYPE) {
 			this.handleHumiditySensorAnalysis(resource,data);
-			handleUpstreamTransmission(resource, DataUtil.getInstance().sensorDataToJson(data), 0);
+			handleUpstreamTransmission(resource, data, 0);
 
 		}
 	}
@@ -490,9 +508,35 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 		_Logger.info("Handling incoming data analysis  (system state) for resource: " + resourceName.toString());
 	}
 
-	private boolean handleUpstreamTransmission(ResourceNameEnum resourceName, String jsonData, int qos)
+	private boolean handleUpstreamTransmission(ResourceNameEnum resourceName, SensorData data, int qos)
 	{
-		_Logger.info("Handling upstream transmission for resource: " + resourceName.toString());
+		_Logger.info("Sending Json data to cloud: " + resourceName.toString());
+		if (this.cloudClient != null) {
+			if (this.cloudClient.sendEdgeDataToCloud(resourceName, data)) {
+				_Logger.info("Published data to cloud: " + resourceName.toString());
+				return true;
+			} else {
+				_Logger.warning("Failed to publish data to cloud: " + resourceName.toString());
+			}
+		} else {
+			_Logger.warning("Cloud client is not enabled. Cannot publish data.");
+		}
+		return false;
+	}
+
+	private boolean handleUpstreamTransmission(ResourceNameEnum resourceName, SystemPerformanceData data, int qos)
+	{
+		_Logger.info("Sending Json data to cloud: " + resourceName.toString());
+		if (this.cloudClient != null) {
+			if (this.cloudClient.sendEdgeDataToCloud(resourceName, data)) {
+				_Logger.info("Published data to cloud: " + resourceName.toString());
+				return true;
+			} else {
+				_Logger.warning("Failed to publish data to cloud: " + resourceName.toString());
+			}
+		} else {
+			_Logger.warning("Cloud client is not enabled. Cannot publish data.");
+		}
 		return false;
 	}
 

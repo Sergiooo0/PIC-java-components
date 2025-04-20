@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.mqttv5.client.IMqttDeliveryToken;
 import org.eclipse.paho.mqttv5.client.IMqttToken;
 import org.eclipse.paho.mqttv5.client.MqttCallback;
@@ -177,6 +178,13 @@ public class Mqttv5ClientConnector implements IPubSubClient, MqttCallback
 	private void initSecureConnectionParameters(String configSectionName)
 	{
 		// TODO: implement this
+	}
+
+
+	@Override
+	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos, IMqttMessageListener listener) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'subscribeToTopic'");
 	}
 
 }

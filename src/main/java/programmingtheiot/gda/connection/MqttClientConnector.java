@@ -102,7 +102,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	// public methods
 	
 	@Override
-public boolean connectClient()
+	public boolean connectClient()
 	{
 		try {
 			if (this.mqttClient == null) {
@@ -472,7 +472,7 @@ public boolean connectClient()
 			this.mqttClient.publish(topicName, mqttMsg);
 			return true;
 		} catch (Exception e) {
-			_Logger.log(Level.SEVERE, "Failed to publish message to topic: " + topicName, e);
+			_Logger.warning("Failed to publish message to topic: " + topicName + " with error: " + e);
 		}
 	
 		return false;

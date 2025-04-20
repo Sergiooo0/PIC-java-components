@@ -12,17 +12,17 @@
 #
 [Cloud.GatewayService]
 credFile       = /home/sergio/Escritorio/PIC/PIC-python-components/UbidotsCloudCred.props
-certFile       = /home/sergio/Escritorio/PIC/PIC-python-components/UbidotsCloudCert.pe
-host           = localhost
+certFile       = /home/sergio/Escritorio/PIC/PIC-python-components/UbidotsCloudCert.pem
+host           = industrial.api.ubidots.com
 port           = 1883
 securePort     = 8883
-defaultQoS     = 0
+defaultQoS     = 1
 keepAlive      = 60
 useAsyncClient = True
 enableAuth     = True
 enableCrypt    = True
 baseUrl        = 
-baseTopic      = 
+baseTopic      = /v1.6/devices
 
 #
 # SMTP client configuration information
@@ -73,7 +73,7 @@ pollCycleSecs           = 60
 enableMqttClient        = True
 enableCoapServer        = True
 enableCoapClient        = False
-enableCloudClient       = False
+enableCloudClient       = True
 enableSmtpClient        = False
 enablePersistenceClient = True
 enableSystemPerformance = True
