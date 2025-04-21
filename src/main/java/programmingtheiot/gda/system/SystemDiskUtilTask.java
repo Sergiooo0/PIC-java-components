@@ -25,7 +25,7 @@ public class SystemDiskUtilTask extends BaseSystemUtilTask {
 	@Override
 	public float getTelemetryValue()
 	{
-        File diskPartition = new File("/home/sergio/Escritorio/PIC/PIC-java-components/src/main");
+        File diskPartition = new File(System.getProperty("user.dir"));
         long totalSpace = diskPartition.getTotalSpace(); // Total disk space
         long freeSpace = diskPartition.getUsableSpace(); // Free space
         long usedSpace = totalSpace - freeSpace; // Used space
