@@ -66,7 +66,7 @@ public class UpdateSystemPerformanceResourceHandler extends GenericCoapResourceH
 	{
 		context.accept();
 		_Logger.info("GET request received on: " + super.getName());
-		context.respond(ResponseCode.CONTENT, "GET not implemented.");
+		context.respond(ResponseCode.CONTENT, "Generic handler. No GET action taken: SystemPerfMsg.");
 	}
 
 	@Override

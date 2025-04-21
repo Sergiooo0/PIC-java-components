@@ -136,6 +136,10 @@ public class CoapServerGateway
 		GetActuatorCommandResourceHandler actuatorHandler =
 			new GetActuatorCommandResourceHandler(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE.getResourceType());
 		addResource(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, null, actuatorHandler);
+
+		if (this.dataMsgListener != null) {
+			this.dataMsgListener.setActuatorDataListener(null, actuatorHandler);
+		}
 	}
 
 	private void createAndAddResourceChain(ResourceNameEnum resourceType, Resource resource)
