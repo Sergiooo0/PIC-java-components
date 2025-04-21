@@ -99,7 +99,7 @@ public class CoapServerGatewayTest
 			
 			/*
 			 * NOTE: Change these to suit your own environment.
-			 */
+			 
 			
 			clientConn.setURI(
 				url + "/" + ConfigConst.PRODUCT_NAME);
@@ -113,6 +113,8 @@ public class CoapServerGatewayTest
 				url + "/" + ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE.getResourceName());
 			clientConn.get();
 			
+			*/
+
 			// wait for 2 min's (so other app tests can run)
 			Thread.sleep(120000L);
 			
