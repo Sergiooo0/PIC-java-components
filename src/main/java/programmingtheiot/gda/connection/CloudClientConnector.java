@@ -11,6 +11,7 @@ package programmingtheiot.gda.connection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.qpid.proton.amqp.messaging.Data;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
@@ -122,8 +123,8 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 	public boolean sendEdgeDataToCloud(ResourceNameEnum resource, SensorData data)
 	{
 		if (resource != null && data != null) {
-			_Logger.info("Sending sensor data to cloud: " + data.toString());
 			String payload = DataUtil.getInstance().sensorDataToJson(data);
+			_Logger.info("Sending sensor data to cloud: " + payload);
 
 			return publishMessageToCloud(resource, data.getName(), payload);
 		}
@@ -285,7 +286,9 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 			if (this.mqttClient == null || !this.mqttClient.isConnected()) {
 				_Logger.warning("No MQTT client connected.");
 			}
-	
+			// Before send the payload to the cloud, we need to adapt the payload
+			// to the format that the cloud service is expecting.
+			payload = DataUtil.getInstance().payloadToCloudPayload(payload);
 			this.mqttClient.publishMessage(topicName, payload.getBytes(), this.qosLevel);
 			_Logger.info("Published payload value(s) to CSP: " + topicName);
 	
@@ -348,6 +351,10 @@ class LedEnablementMessageListener implements IMqttMessageListener
 	{
 		try {
 			String jsonData = new String(message.getPayload());
+
+			// The jsonData is in the format needed by the cloud service.
+			// We need to convert it to the format needed by the actuator.
+			jsonData = DataUtil.getInstance().cloudPayloadToPayload(jsonData);
 
 			ActuatorData actuatorData =
 				DataUtil.getInstance().jsonToActuatorData(jsonData);

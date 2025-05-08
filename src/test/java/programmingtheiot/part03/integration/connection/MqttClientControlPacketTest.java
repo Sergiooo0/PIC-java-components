@@ -105,6 +105,12 @@ public class MqttClientControlPacketTest
 	{
 		this.mqttClient.connectClient();
 
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
 		ResourceNameEnum topic = ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE;
 
 		// Subscribe (QoS 2)

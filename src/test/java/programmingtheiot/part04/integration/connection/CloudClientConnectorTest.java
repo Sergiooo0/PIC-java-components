@@ -147,6 +147,8 @@ public class CloudClientConnectorTest
 		sysPerfData.setMemoryUtilization(39.8f);
 		
 		assertTrue(this.cloudClient.subscribeToCloudEvents(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE));
+		//assertTrue(this.cloudClient.subscribeToCloudEvents(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE));
+		//assertTrue(this.cloudClient.subscribeToCloudEvents(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE));
 		
 		try {
 			// sleep for a few seconds...
@@ -217,6 +219,7 @@ public class CloudClientConnectorTest
 		SensorData sensorData = new SensorData();
 		sensorData.setName(ConfigConst.TEMP_SENSOR_NAME);
 		sensorData.setValue(50.0f);
+		sensorData.setLatitude(2.1f);
 		assertTrue(this.cloudClient.sendEdgeDataToCloud(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, sensorData));
 
 		assertTrue(this.cloudClient.disconnectClient());

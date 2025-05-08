@@ -11,8 +11,8 @@
 # Cloud client configuration information
 #
 [Cloud.GatewayService]
-credFile       = /home/sergio/Escritorio/PIC/PIC-python-components/UbidotsCloudCred.props
-certFile       = /home/sergio/Escritorio/PIC/PIC-python-components/UbidotsCloudCert.pem
+credFile       = /home/sergio/Escritorio/PIC/PIC-java-components/UbidotsCloudCred.props
+certFile       = /home/sergio/Escritorio/PIC/PIC-java-components/UbidotsCloudCert.pem
 host           = industrial.api.ubidots.com
 port           = 1883
 securePort     = 8883
