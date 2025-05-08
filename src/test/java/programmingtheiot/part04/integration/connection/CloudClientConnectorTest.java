@@ -236,13 +236,32 @@ public class CloudClientConnectorTest
 		try {
 			// sleep for a couple of seconds or so...
 			
-			Thread.sleep(30000L);
+			Thread.sleep(20000L);
 		} catch (Exception e) {
 			// ignore
 		}
 		
-		//assertTrue(this.cloudClient.sendEdgeDataToCloud(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, "LED_ON"));
+		// in Ubidots, there is an event which sends LED_ON when the value of sensorDara > 50.
+		// First send a value lower than 50, to reset the event trigger.
+		SensorData sensorData = new SensorData();
+		sensorData.setName(ConfigConst.TEMP_SENSOR_NAME);
+		sensorData.setValue(30.0f);
+		assertTrue(this.cloudClient.sendEdgeDataToCloud(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, sensorData));
+
+		// Now send a value higher than 50, to trigger the event.
+		sensorData = new SensorData();
+		sensorData.setName(ConfigConst.TEMP_SENSOR_NAME);
+		sensorData.setValue(51.0f);
 		
+		assertTrue(this.cloudClient.sendEdgeDataToCloud(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, sensorData));
+		// Now we should see : "INFORMACIÓN: Received LED enablement message [ON]."
+		try {
+			// sleep for a couple of seconds or so...
+			
+			Thread.sleep(20000L);
+		} catch (Exception e) {
+			// ignore
+		}
 		assertTrue(this.cloudClient.disconnectClient());
 		
 		_Logger.info("Test complete.");
