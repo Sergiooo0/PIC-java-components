@@ -44,6 +44,8 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 		ConfigConst.CLOUD_GATEWAY_SERVICE, 
 		ConfigConst.DEFAULT_QOS_KEY, 
 		ConfigConst.DEFAULT_QOS);
+
+	boolean firstTimeConnected = true;
 	
 	// constructors
 	
@@ -234,10 +236,13 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 		ad.setValue((float) -1.0); // NOTE: this just needs to be an invalid actuation value
 
 		String ledTopic = createTopicName(ledListener.getResource().getDeviceName(), ad.getName());
-		String adJson = DataUtil.getInstance().actuatorDataToJson(ad);
-
-		this.publishMessageToCloud(ledTopic, adJson);
-
+		if (firstTimeConnected) {
+			String adJson = DataUtil.getInstance().actuatorDataToJson(ad);
+			this.publishMessageToCloud(ledTopic, adJson);
+			firstTimeConnected = false;
+		} else {
+			_Logger.info("Not sending initial LED actuation command.");
+		}
 		this.mqttClient.subscribeToTopic(ledTopic, this.qosLevel, ledListener);
 	}
 
