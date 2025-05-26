@@ -517,7 +517,7 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			String jsonData = DataUtil.getInstance().actuatorDataToJson(data);
 
 			if (this.mqttClient.publishMessage(resource, jsonData, ConfigConst.DEFAULT_QOS)) {
-				_Logger.info("Published ActuatorData command from GDA to CDA: " + data.getCommand());
+				_Logger.info("Published ActuatorData command from GDA to CDA: " + data.getValue());
 			} else {
 				_Logger.warning("Failed to publish ActuatorData command from GDA to CDA: " + data.getCommand());
 			}
