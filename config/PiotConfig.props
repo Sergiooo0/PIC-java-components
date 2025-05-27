@@ -23,7 +23,7 @@ enableAuth     = True
 enableCrypt    = True
 baseUrl        = 
 baseTopic      = /v1.6/devices
-deviceLocationID = gatewaydevice001_cloud
+deviceLocationID = gatewaydevice01_cloud
 
 #
 # SMTP client configuration information
@@ -50,7 +50,7 @@ keepAlive      = 30
 enableAuth     = False
 enableCrypt    = False
 useAsyncClient = True
-deviceLocationID = gatewaydevice001
+deviceLocationID = gatewaydevice01
 
 #
 # CoAP client and server configuration information
@@ -69,7 +69,7 @@ enableConfirmedMsgs = True
 # GDA specific configuration information
 #
 [GatewayDevice]
-deviceLocationID        = gatewaydevice001
+deviceLocationID        = gatewaydevice01
 enableLogging           = True
 pollCycleSecs           = 60
 enableMqttClient        = True
