@@ -72,7 +72,7 @@ public class SystemPerformanceManager
 
 		this.locationID =
 			ConfigUtil.getInstance().getProperty(
-				ConfigConst.GATEWAY_DEVICE, ConfigConst.LOCATION_ID_PROP, ConfigConst.NOT_SET);
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.DEVICE_LOCATION_ID_KEY, ConfigConst.NOT_SET);
 	}
 	
 	

@@ -129,7 +129,7 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 			String payload = DataUtil.getInstance().sensorDataToJson(data);
 			_Logger.info("Sending sensor data to cloud: " + payload);
 
-			if (data.getLocationID() == null || data.getLocationID().trim().length() == 0) {
+			if (data.getLocationID() == null || data.getLocationID().trim().length() == 0 || data.getLocationID() == ConfigConst.NOT_SET) {
 				// if no location ID is set, use the resource
 				return publishMessageToCloud(resource, data.getName(), payload);
 			}
@@ -149,7 +149,8 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 			cpuData.updateData(data);
 			cpuData.setName(ConfigConst.CPU_UTIL_NAME);
 			cpuData.setValue(data.getCpuUtilization());
-
+			cpuData.setLocationID(data.getLocationID());
+			
 			boolean cpuDataSuccess = sendEdgeDataToCloud(resource, cpuData);
 
 			if (! cpuDataSuccess) {
@@ -161,6 +162,7 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 			memData.updateData(data);
 			memData.setName(ConfigConst.MEM_UTIL_NAME);
 			memData.setValue(data.getMemoryUtilization());
+			memData.setLocationID(data.getLocationID());
 
 			boolean memDataSuccess = sendEdgeDataToCloud(resource, memData);
 
@@ -168,7 +170,18 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 				_Logger.warning("Failed to send memory utilization data to cloud service.");
 			}
 
-			return (cpuDataSuccess == memDataSuccess);
+			// send the disk utilization data as a SensorData representation
+			SensorData diskData = new SensorData();
+			diskData.updateData(data);
+			diskData.setName(ConfigConst.DISK_UTIL_NAME);
+			diskData.setValue(data.getDiskUtilization());
+			diskData.setLocationID(data.getLocationID());
+			boolean diskDataSuccess = sendEdgeDataToCloud(resource, diskData);
+			if (! diskDataSuccess) {
+				_Logger.warning("Failed to send disk utilization data to cloud service.");
+			}
+
+			return (cpuDataSuccess == memDataSuccess == diskDataSuccess);
 		}
 
 		return false;
@@ -240,7 +253,7 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 		ad.setAsResponse();
 		ad.setName(ConfigConst.LED_ACTUATOR_NAME);
 		ad.setValue((float) -1.0); // NOTE: this just needs to be an invalid actuation value
-		ad.setLocationID("constraineddevice001");
+		ad.setLocationID("constraineddevice01");
 
 		String ledTopic = createTopicName(ad.getLocationID(), ad.getName());
 		if (firstTimeConnected) {
