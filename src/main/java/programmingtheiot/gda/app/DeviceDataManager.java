@@ -67,18 +67,28 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 	private SystemPerformanceManager sysPerfMgr = null;
 
 	private ActuatorData latestHumidifierActuatorData =null;
+	private ActuatorData latestVibrationActuatorData =null;
 	private ActuatorData latestHumidifierActuatorResponse =null;
 	private SensorData latestHumiditySensorData =null;
 	private OffsetDateTime latestHumiditySensorTimeStamp =null;
+	private SensorData latestIMUSensorData =null;
+	private OffsetDateTime latestIMUSensorTimeStamp =null;
 
 	private boolean handleHumidityChangeOnDevice =false;// optional
 	private int lastKnownHumidifierCommand   =ConfigConst.OFF_COMMAND;
+	private boolean handleIMUDataOnDevice = ConfigUtil.getInstance().getBoolean(
+		ConfigConst.GATEWAY_DEVICE, ConfigConst.HANDLE_IMU_DATA_ON_DEVICE_KEY);
+	private int lastKnownVibrationCommand =ConfigConst.OFF_COMMAND;
 
 
 	private long humidityMaxTimePastThreshold =300;// seconds
 	private float nominalHumiditySetting   =40.0f;
 	private float triggerHumidifierFloor   =30.0f;
 	private float triggerHumidifierCeiling =50.0f;
+	private float vibrationWarningValue = ConfigUtil.getInstance().getFloat(
+		ConfigConst.GATEWAY_DEVICE, ConfigConst.VIBRATION_WARNING_VALUE_KEY, 2.5f);
+	private float vibrationCriticalValue = ConfigUtil.getInstance().getFloat(
+		ConfigConst.GATEWAY_DEVICE, ConfigConst.VIBRATION_CRITICAL_VALUE_KEY, 5f);
 
 
 	
@@ -434,6 +444,81 @@ public class DeviceDataManager extends JedisPubSub implements IDataMessageListen
 			this.handleHumiditySensorAnalysis(resource,data);
 			handleUpstreamTransmission(resource, data, 0);
 
+		} else if (data.getTypeID() == ConfigConst.IMU_SENSOR_TYPE) {
+			this.handleIMUSensorAnalysis(resource, data);
+			handleUpstreamTransmission(resource, data, 0);
+
+		}
+	}
+
+	private void handleIMUSensorAnalysis(ResourceNameEnum resource, SensorData data) {
+		_Logger.info("Analyzing IMU data from CDA: " + data.getLocationID() + ". Value: " + data.getValue());
+		float vibrationValue = data.getValue();
+		
+		// Check if we need to turn off the actuator when vibration is below warning level
+		if (vibrationValue < this.vibrationWarningValue && this.lastKnownVibrationCommand == ConfigConst.ON_COMMAND) {
+			if (this.latestVibrationActuatorData != null) {
+				this.latestVibrationActuatorData.setCommand(ConfigConst.OFF_COMMAND);
+				sendActuatorCommandtoCda(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, this.latestVibrationActuatorData);
+				this.lastKnownVibrationCommand = this.latestVibrationActuatorData.getCommand();
+				this.latestVibrationActuatorData = null;
+				this.latestIMUSensorData = null;
+				this.latestIMUSensorTimeStamp = null;
+			} else {
+				_Logger.warning("ERROR: ActuatorData for vibration is null (shouldn't be). Can't send command.");
+			}
+			return;
+		}
+
+		// Determine if we need to act on high vibration
+		float criticLevel = 0.0f;
+		int commandValue = ConfigConst.OFF_COMMAND;
+		boolean needsAction = false;
+
+		if (vibrationValue > this.vibrationCriticalValue) {
+			_Logger.info("Vibration value exceeds critical threshold: " + data.getValue());
+			criticLevel = 2.0f;
+			commandValue = ConfigConst.ON_COMMAND;
+			needsAction = true;
+		} else if (vibrationValue > this.vibrationWarningValue) {
+			_Logger.info("Vibration value exceeds warning threshold: " + data.getValue());
+			criticLevel = 1.0f;
+			commandValue = ConfigConst.ON_COMMAND;
+			needsAction = true;
+		}
+
+		if (needsAction) {
+			if (this.latestIMUSensorData == null) {
+				// First reading above threshold - start timing
+				this.latestIMUSensorData = data;
+				this.latestIMUSensorTimeStamp = getDateTimeFromData(data);
+				_Logger.info("Starting vibration monitoring timer. Threshold: " + this.humidityMaxTimePastThreshold + " seconds");
+			} else {
+				// Check if we've exceeded the time threshold
+				OffsetDateTime curIMUSensorTimeStamp = getDateTimeFromData(data);
+				long diffSeconds = ChronoUnit.SECONDS.between(this.latestIMUSensorTimeStamp, curIMUSensorTimeStamp);
+				
+				if (diffSeconds >= this.humidityMaxTimePastThreshold) {
+					_Logger.info("Vibration exceeded threshold for specified duration. Sending actuation command.");
+					ActuatorData ad = new ActuatorData();
+					ad.setName(ConfigConst.VIBRATION_ACTUATOR_NAME);
+					ad.setLocationID(data.getLocationID());
+					ad.setTypeID(ConfigConst.VIBRATION_ACTUATOR_TYPE);
+					ad.setValue(criticLevel);
+					ad.setCommand(commandValue);
+
+					this.lastKnownVibrationCommand = ad.getCommand();
+					sendActuatorCommandtoCda(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, ad);
+
+					this.latestIMUSensorData = null;
+					this.latestIMUSensorTimeStamp = null;
+					this.latestVibrationActuatorData = ad;
+				}
+			}
+		} else {
+			// Reset monitoring if vibration returns to normal without triggering action
+			this.latestIMUSensorData = null;
+			this.latestIMUSensorTimeStamp = null;
 		}
 	}
 

@@ -99,6 +99,15 @@ triggerHumidifierFloor       = 30.0
 # max value before turning off humidifier (% relative)
 triggerHumidifierCeiling     = 50.0
 
+# if true, GDA will process IMU data from CDA
+handleIMUDataOnDevice = False
+
+# Vibration warning value
+vibrationWarningValue = 2.5
+
+# Vibration critical value
+vibrationCriticalValue = 5
+
 [Data.GatewayService]
 credFile = ./cred/PiotPersistenceCred.props
 host = localhost
